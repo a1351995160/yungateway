@@ -1,0 +1,25 @@
+spring:
+  application:
+    name: wps-yundoc-capability-gateway
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+management:
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+      group:
+        readiness:
+          include: readinessState,yundocConfiguration,db,redis
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+
+yundoc:
+  readiness:
+    tdsql-required: true
+    redis-required: true
