@@ -11,4 +11,15 @@ public interface BizSystemMapper {
     BizSystemPO selectByBusinessSystemId(@Param("businessSystemId") String businessSystemId);
 
     BizSystemPO selectByClientId(@Param("clientId") String clientId);
+
+    int updateSecret(
+            @Param("businessSystemId") String businessSystemId,
+            @Param("clientSecretDigest") String clientSecretDigest,
+            @Param("clientSecretSalt") String clientSecretSalt,
+            @Param("clientSecretAlg") String clientSecretAlg,
+            @Param("updatedAt") java.time.LocalDateTime updatedAt);
+
+    int increasePermissionVersion(
+            @Param("businessSystemId") String businessSystemId,
+            @Param("updatedAt") java.time.LocalDateTime updatedAt);
 }

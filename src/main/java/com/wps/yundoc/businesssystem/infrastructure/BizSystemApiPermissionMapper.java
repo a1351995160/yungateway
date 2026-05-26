@@ -16,4 +16,6 @@ public interface BizSystemApiPermissionMapper {
 
     List<BizSystemApiPermissionPO> selectByBusinessSystemId(
             @Param("businessSystemId") String businessSystemId);
+
+    int deleteByBusinessSystemId(@Param("businessSystemId") String businessSystemId);
 }

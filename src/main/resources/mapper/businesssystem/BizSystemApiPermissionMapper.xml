@@ -52,4 +52,9 @@
         WHERE business_system_id = #{businessSystemId}
         ORDER BY api_code ASC
     </select>
+
+    <delete id="deleteByBusinessSystemId">
+        DELETE FROM biz_system_api_permission
+        WHERE business_system_id = #{businessSystemId}
+    </delete>
 </mapper>
