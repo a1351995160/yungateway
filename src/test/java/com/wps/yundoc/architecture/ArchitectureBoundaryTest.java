@@ -21,16 +21,11 @@ class ArchitectureBoundaryTest {
     static final ArchRule business_modules_should_not_call_wps_http_directly =
             noClasses()
                     .that().resideInAnyPackage(
-                            "..accessauth..",
+                            "..auth..",
+                            "..adminauth..",
                             "..businesssystem..",
-                            "..capabilitypolicy..",
                             "..credential..",
-                            "..yundocfile..",
-                            "..upload..",
-                            "..share..",
-                            "..permission..",
-                            "..idempotency..",
-                            "..audit..")
+                            "..capability..")
                     .should().dependOnClassesThat().resideInAnyPackage(
                             "org.springframework.web.client..",
                             "org.apache.http..",
@@ -38,9 +33,9 @@ class ArchitectureBoundaryTest {
                     .allowEmptyShould(true);
 
     @ArchTest
-    static final ArchRule adapters_should_not_access_mappers_directly =
+    static final ArchRule controllers_should_not_access_mappers_directly =
             noClasses()
-                    .that().resideInAPackage("..adapter..")
-                    .should().dependOnClassesThat().resideInAPackage("..infrastructure.mapper..")
+                    .that().resideInAnyPackage("..api..")
+                    .should().dependOnClassesThat().resideInAnyPackage("..infrastructure..")
                     .allowEmptyShould(true);
 }

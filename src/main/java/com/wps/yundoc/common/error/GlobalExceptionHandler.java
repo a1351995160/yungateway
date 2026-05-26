@@ -29,16 +29,16 @@ public class GlobalExceptionHandler {
     })
     public ResponseEntity<ApiResponse<Void>> handleValidationException(Exception exception) {
         ErrorResponse error = ErrorResponse.of(
-                YundocErrorCode.YUNDOC_VALIDATION_FAILED.name(),
-                YundocErrorCode.YUNDOC_VALIDATION_FAILED.getDefaultMessage());
+                YundocErrorCode.VALIDATION_FAILED.name(),
+                YundocErrorCode.VALIDATION_FAILED.getDefaultMessage());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.failure(error, requestId()));
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleUnhandledException(Exception exception) {
         ErrorResponse error = ErrorResponse.of(
-                YundocErrorCode.YUNDOC_INTERNAL_ERROR.name(),
-                YundocErrorCode.YUNDOC_INTERNAL_ERROR.getDefaultMessage());
+                YundocErrorCode.INTERNAL_ERROR.name(),
+                YundocErrorCode.INTERNAL_ERROR.getDefaultMessage());
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiResponse.failure(error, requestId()));
     }
 
@@ -46,4 +46,3 @@ public class GlobalExceptionHandler {
         return RequestContextHolder.currentRequestId().orElse("unknown");
     }
 }
-

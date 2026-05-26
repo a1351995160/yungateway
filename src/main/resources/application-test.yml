@@ -9,13 +9,9 @@ management:
   endpoint:
     health:
       show-details: always
-  health:
-    redis:
-      enabled: false
 
 yundoc:
   jwt:
     issuer: yundoc-gateway-test
     audience: yundoc-business-systems-test
     ttl: 30m
-

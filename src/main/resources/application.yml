@@ -13,7 +13,7 @@ management:
       show-details: never
       group:
         readiness:
-          include: readinessState,yundocConfiguration,db,redis
+          include: readinessState,yundocConfiguration,db
   endpoints:
     web:
       exposure:
@@ -22,4 +22,3 @@ management:
 yundoc:
   readiness:
     tdsql-required: true
-    redis-required: true

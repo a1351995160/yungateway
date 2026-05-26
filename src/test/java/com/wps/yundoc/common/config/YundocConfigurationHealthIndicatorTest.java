@@ -10,14 +10,12 @@ class YundocConfigurationHealthIndicatorTest {
     @Test
     void healthExposesReadinessFlags() {
         YundocReadinessProperties properties = new YundocReadinessProperties();
-        properties.setRedisRequired(false);
         properties.setTdsqlRequired(true);
 
         Health health = new YundocConfigurationHealthIndicator(properties).health();
 
         assertThat(health.getStatus().getCode()).isEqualTo("UP");
         assertThat(health.getDetails()).containsEntry("tdsqlRequired", true);
-        assertThat(health.getDetails()).containsEntry("redisRequired", false);
+        assertThat(health.getDetails()).doesNotContainKey("redisRequired");
     }
 }
-

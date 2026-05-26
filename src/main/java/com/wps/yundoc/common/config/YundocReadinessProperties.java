@@ -8,7 +8,6 @@ import org.springframework.validation.annotation.Validated;
 public class YundocReadinessProperties {
 
     private boolean tdsqlRequired = true;
-    private boolean redisRequired = true;
 
     public boolean isTdsqlRequired() {
         return tdsqlRequired;
@@ -17,13 +16,4 @@ public class YundocReadinessProperties {
     public void setTdsqlRequired(boolean tdsqlRequired) {
         this.tdsqlRequired = tdsqlRequired;
     }
-
-    public boolean isRedisRequired() {
-        return redisRequired;
-    }
-
-    public void setRedisRequired(boolean redisRequired) {
-        this.redisRequired = redisRequired;
-    }
 }
-
