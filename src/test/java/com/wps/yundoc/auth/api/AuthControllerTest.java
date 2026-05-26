@@ -8,6 +8,7 @@ import com.wps.yundoc.businesssystem.api.BusinessSystemApiPermissionUpdateReques
 import com.wps.yundoc.businesssystem.application.BusinessSystemAdminService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
@@ -17,6 +18,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.web.servlet.MockMvc;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -24,8 +26,11 @@ import java.util.Base64;
 import java.util.Collections;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@AutoConfigureMockMvc
 @ActiveProfiles("test")
 class AuthControllerTest {
 
@@ -40,6 +45,9 @@ class AuthControllerTest {
 
     @Autowired
     private BusinessSystemAdminService adminService;
+
+    @Autowired
+    private MockMvc mockMvc;
 
     @Test
     void issuesBusinessJwtWithoutUserOrAuthModeClaims() throws IOException {
@@ -60,12 +68,13 @@ class AuthControllerTest {
     }
 
     @Test
-    void rejectsWrongClientSecret() {
+    void rejectsWrongClientSecret() throws Exception {
         BusinessSystemCreateResponse created = createBusinessSystem("biz-token-wrong-secret");
 
-        ResponseEntity<String> response = token(created.getBusinessSystem().getClientId(), "wrong-secret");
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        mockMvc.perform(post("/api/v1/auth/token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(tokenJson(created.getBusinessSystem().getClientId(), "wrong-secret")))
+                .andExpect(status().isUnauthorized());
     }
 
     private BusinessSystemCreateResponse createBusinessSystem(String businessSystemId) {
@@ -83,8 +92,11 @@ class AuthControllerTest {
     }
 
     private ResponseEntity<String> token(String clientId, String clientSecret) {
-        String body = "{\"clientId\":\"" + clientId + "\",\"clientSecret\":\"" + clientSecret + "\"}";
-        return restTemplate.postForEntity(url("/api/v1/auth/token"), jsonEntity(body), String.class);
+        return restTemplate.postForEntity(url("/api/v1/auth/token"), jsonEntity(tokenJson(clientId, clientSecret)), String.class);
+    }
+
+    private String tokenJson(String clientId, String clientSecret) {
+        return "{\"clientId\":\"" + clientId + "\",\"clientSecret\":\"" + clientSecret + "\"}";
     }
 
     private HttpEntity<String> jsonEntity(String body) {

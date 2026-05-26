@@ -6,6 +6,7 @@ import com.wps.yundoc.businesssystem.api.BusinessSystemApiPermissionUpdateReques
 import com.wps.yundoc.businesssystem.api.BusinessSystemCreateRequest;
 import com.wps.yundoc.businesssystem.api.BusinessSystemCreateResponse;
 import com.wps.yundoc.businesssystem.application.BusinessSystemAdminService;
+import com.wps.yundoc.common.api.ApiResponse;
 import com.wps.yundoc.common.context.RequestContext;
 import com.wps.yundoc.common.context.RequestContextHolder;
 import org.junit.jupiter.api.Test;
@@ -142,10 +143,13 @@ class JwtAuthenticationFilterTest {
     static class CapabilityTestController {
 
         @PostMapping("/api/v1/app/previews")
-        public CapabilityContextResponse preview() {
+        public ApiResponse<CapabilityContextResponse> preview() {
             RequestContext context = RequestContextHolder.current()
                     .orElseThrow(() -> new IllegalStateException("request context is required"));
-            return new CapabilityContextResponse(context.getBusinessSystemId(), context.getApiCode());
+            CapabilityContextResponse response = new CapabilityContextResponse(
+                    context.getBusinessSystemId(),
+                    context.getApiCode());
+            return ApiResponse.success(response, context.getRequestId());
         }
     }
 

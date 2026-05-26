@@ -24,4 +24,5 @@ yundoc:
   jwt:
     issuer: yundoc-gateway-test
     audience: yundoc-business-systems-test
+    secret: test-business-jwt-secret-with-enough-length
     ttl: 30m
