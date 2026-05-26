@@ -33,8 +33,12 @@ public class JwtService {
     }
 
     public String issue(BusinessSystemPrincipal principal) {
+        return issue(principal, properties.getTtl().getSeconds());
+    }
+
+    public String issue(BusinessSystemPrincipal principal, long ttlSeconds) {
         long issuedAt = Instant.now().getEpochSecond();
-        long expiresAt = issuedAt + properties.getTtl().getSeconds();
+        long expiresAt = issuedAt + ttlSeconds;
         String payload = encodeJson(payload(principal, issuedAt, expiresAt));
         String signingInput = base64Url(HEADER) + "." + payload;
         return signingInput + "." + signature(signingInput);

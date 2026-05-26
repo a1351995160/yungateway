@@ -40,9 +40,10 @@ public class AuthTokenService {
         requireSecretMatch(clientSecret, bizSystem);
         BusinessSystemPrincipal principal = principal(bizSystem);
         List<String> apiPermissions = apiPermissions(bizSystem.getBusinessSystemId());
+        long expiresIn = jwtTtlSeconds(bizSystem);
         return new AuthToken(
-                jwtService.issue(principal),
-                jwtService.expiresInSeconds(),
+                jwtService.issue(principal, expiresIn),
+                expiresIn,
                 principal,
                 apiPermissions);
     }
@@ -86,5 +87,13 @@ public class AuthTokenService {
                 .stream()
                 .map(BizSystemApiPermissionPO::getApiCode)
                 .collect(Collectors.toList());
+    }
+
+    private long jwtTtlSeconds(BizSystemPO bizSystem) {
+        Integer ttlSeconds = bizSystem.getJwtTtlSeconds();
+        if (ttlSeconds == null) {
+            return jwtService.expiresInSeconds();
+        }
+        return ttlSeconds.longValue();
     }
 }

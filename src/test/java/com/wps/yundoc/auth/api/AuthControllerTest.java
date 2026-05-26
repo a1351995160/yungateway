@@ -68,6 +68,19 @@ class AuthControllerTest {
     }
 
     @Test
+    void usesBusinessSystemJwtTtlWhenIssuingToken() throws IOException {
+        BusinessSystemCreateResponse created = createBusinessSystem("biz-token-ttl", 600);
+
+        ResponseEntity<String> response = token(created.getBusinessSystem().getClientId(), created.getClientSecret());
+
+        JsonNode data = objectMapper.readTree(response.getBody()).path("data");
+        JsonNode payload = jwtPayload(data.path("accessToken").asText());
+        long actualTtl = payload.path("exp").asLong() - payload.path("iat").asLong();
+        assertThat(data.path("expiresIn").asLong()).isEqualTo(600);
+        assertThat(actualTtl).isEqualTo(600);
+    }
+
+    @Test
     void rejectsWrongClientSecret() throws Exception {
         BusinessSystemCreateResponse created = createBusinessSystem("biz-token-wrong-secret");
 
@@ -78,10 +91,14 @@ class AuthControllerTest {
     }
 
     private BusinessSystemCreateResponse createBusinessSystem(String businessSystemId) {
+        return createBusinessSystem(businessSystemId, 1800);
+    }
+
+    private BusinessSystemCreateResponse createBusinessSystem(String businessSystemId, Integer jwtTtlSeconds) {
         BusinessSystemCreateRequest request = new BusinessSystemCreateRequest();
         request.setBusinessSystemId(businessSystemId);
         request.setBusinessSystemName("Contract System");
-        request.setJwtTtlSeconds(1800);
+        request.setJwtTtlSeconds(jwtTtlSeconds);
         return adminService.create(request);
     }
 

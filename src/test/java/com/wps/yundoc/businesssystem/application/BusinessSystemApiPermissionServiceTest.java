@@ -63,6 +63,18 @@ class BusinessSystemApiPermissionServiceTest {
                 .hasFieldOrPropertyWithValue("errorCode", YundocErrorCode.TOKEN_INVALID);
     }
 
+    @Test
+    void rejectsStaleTokenVersion() {
+        BusinessSystemCreateResponse created = createBusinessSystem("biz-token-stale");
+        adminService.savePermissions("biz-token-stale", permissions("app-preview:create"));
+        BusinessSystemPrincipal principal = principal(created);
+        adminService.resetClientSecret("biz-token-stale");
+
+        assertThatThrownBy(() -> permissionService.requirePermission(principal, "app-preview:create"))
+                .isInstanceOf(YundocException.class)
+                .hasFieldOrPropertyWithValue("errorCode", YundocErrorCode.TOKEN_INVALID);
+    }
+
     private BusinessSystemPrincipal principal(BusinessSystemCreateResponse created) {
         return authTokenService.issueToken(
                 created.getBusinessSystem().getClientId(),

@@ -29,7 +29,7 @@ class CapabilityRouteRule {
         if (!method.matches(request.getMethod())) {
             return false;
         }
-        return matchesPath(request.getRequestURI());
+        return matchesPath(applicationPath(request));
     }
 
     String apiCode() {
@@ -51,5 +51,29 @@ class CapabilityRouteRule {
             return false;
         }
         return requestPath.endsWith(suffix);
+    }
+
+    private String applicationPath(HttpServletRequest request) {
+        String servletPath = request.getServletPath();
+        if (hasText(servletPath)) {
+            return servletPath;
+        }
+        return removeContextPath(request);
+    }
+
+    private String removeContextPath(HttpServletRequest request) {
+        String contextPath = request.getContextPath();
+        String requestUri = request.getRequestURI();
+        if (!hasText(contextPath)) {
+            return requestUri;
+        }
+        return requestUri.substring(contextPath.length());
+    }
+
+    private boolean hasText(String value) {
+        if (value == null) {
+            return false;
+        }
+        return !value.isEmpty();
     }
 }
