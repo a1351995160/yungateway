@@ -24,6 +24,7 @@ class SchemaPolicyTest {
     void migrationsDoNotUseAutoIncrementOrLargeFields() throws IOException {
         List<Path> migrations = migrationFiles();
 
+        assertThat(migrations).isNotEmpty();
         for (Path migration : migrations) {
             String sql = readSql(migration);
             assertThat(sql).doesNotContain("auto_increment");
@@ -32,6 +33,9 @@ class SchemaPolicyTest {
             assertThat(sql).doesNotContain(" mediumtext");
             assertThat(sql).doesNotContain(" mediumblob");
             assertThat(sql).doesNotContain(" json");
+            assertThat(sql).doesNotContain("auth_mode");
+            assertThat(sql).doesNotContain("access_token");
+            assertThat(sql).doesNotContain("refresh_token");
         }
     }
 
@@ -50,6 +54,19 @@ class SchemaPolicyTest {
         }
     }
 
+    @Test
+    void bizSystemMigrationContainsOnlyMvpTables() throws IOException {
+        String sql = migrationFiles().stream()
+                .map(SchemaPolicyTest::readSqlUnchecked)
+                .collect(Collectors.joining("\n"));
+
+        assertThat(sql).contains("create table biz_system");
+        assertThat(sql).contains("create table biz_system_api_permission");
+        assertThat(sql).contains("primary key (business_system_id)");
+        assertThat(sql).contains("unique key uk_biz_system_client (client_id)");
+        assertThat(sql).contains("primary key (business_system_id, api_code)");
+    }
+
     private static List<Path> migrationFiles() throws IOException {
         Path migrationDir = Paths.get("src", "main", "resources", "db", "migration");
         if (!Files.exists(migrationDir)) {
@@ -65,5 +82,12 @@ class SchemaPolicyTest {
     private static String readSql(Path migration) throws IOException {
         return new String(Files.readAllBytes(migration), StandardCharsets.UTF_8).toLowerCase(Locale.ROOT);
     }
-}
 
+    private static String readSqlUnchecked(Path migration) {
+        try {
+            return readSql(migration);
+        } catch (IOException ex) {
+            throw new IllegalStateException("Failed to read migration " + migration, ex);
+        }
+    }
+}
