@@ -4,98 +4,71 @@ import java.time.LocalDateTime;
 
 public class BusinessSystem {
 
-    private final String businessSystemId;
-    private final String businessSystemName;
-    private final String clientId;
-    private final String clientSecretDigest;
-    private final String clientSecretSalt;
-    private final String clientSecretAlg;
-    private final String status;
-    private final Integer tokenVersion;
-    private final Integer permissionVersion;
-    private final Integer jwtTtlSeconds;
-    private final String description;
-    private final LocalDateTime createdAt;
-    private final LocalDateTime updatedAt;
+    private final BusinessSystemProfile profile;
+    private final BusinessSystemSecret secret;
+    private final BusinessSystemVersioning versioning;
+    private final BusinessSystemTimestamps timestamps;
 
     public BusinessSystem(
-            String businessSystemId,
-            String businessSystemName,
-            String clientId,
-            String clientSecretDigest,
-            String clientSecretSalt,
-            String clientSecretAlg,
-            String status,
-            Integer tokenVersion,
-            Integer permissionVersion,
-            Integer jwtTtlSeconds,
-            String description,
-            LocalDateTime createdAt,
-            LocalDateTime updatedAt) {
-        this.businessSystemId = businessSystemId;
-        this.businessSystemName = businessSystemName;
-        this.clientId = clientId;
-        this.clientSecretDigest = clientSecretDigest;
-        this.clientSecretSalt = clientSecretSalt;
-        this.clientSecretAlg = clientSecretAlg;
-        this.status = status;
-        this.tokenVersion = tokenVersion;
-        this.permissionVersion = permissionVersion;
-        this.jwtTtlSeconds = jwtTtlSeconds;
-        this.description = description;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
+            BusinessSystemProfile profile,
+            BusinessSystemSecret secret,
+            BusinessSystemVersioning versioning,
+            BusinessSystemTimestamps timestamps) {
+        this.profile = profile;
+        this.secret = secret;
+        this.versioning = versioning;
+        this.timestamps = timestamps;
     }
 
     public String getBusinessSystemId() {
-        return businessSystemId;
+        return profile.getBusinessSystemId();
     }
 
     public String getBusinessSystemName() {
-        return businessSystemName;
+        return profile.getBusinessSystemName();
     }
 
     public String getClientId() {
-        return clientId;
+        return profile.getClientId();
     }
 
     public String getClientSecretDigest() {
-        return clientSecretDigest;
+        return secret.getClientSecretDigest();
     }
 
     public String getClientSecretSalt() {
-        return clientSecretSalt;
+        return secret.getClientSecretSalt();
     }
 
     public String getClientSecretAlg() {
-        return clientSecretAlg;
+        return secret.getClientSecretAlg();
     }
 
     public String getStatus() {
-        return status;
+        return profile.getStatus();
     }
 
     public Integer getTokenVersion() {
-        return tokenVersion;
+        return versioning.getTokenVersion();
     }
 
     public Integer getPermissionVersion() {
-        return permissionVersion;
+        return versioning.getPermissionVersion();
     }
 
     public Integer getJwtTtlSeconds() {
-        return jwtTtlSeconds;
+        return versioning.getJwtTtlSeconds();
     }
 
     public String getDescription() {
-        return description;
+        return profile.getDescription();
     }
 
     public LocalDateTime getCreatedAt() {
-        return createdAt;
+        return timestamps.getCreatedAt();
     }
 
     public LocalDateTime getUpdatedAt() {
-        return updatedAt;
+        return timestamps.getUpdatedAt();
     }
 }

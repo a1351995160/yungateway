@@ -1,15 +1,17 @@
 package com.wps.yundoc.health;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
-import org.springframework.boot.web.server.LocalServerPort;
+import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 
-import java.util.Map;
+import java.io.IOException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -23,16 +25,18 @@ class HealthCheckTest {
     @Autowired
     private TestRestTemplate restTemplate;
 
+    @Autowired
+    private ObjectMapper objectMapper;
+
     @Test
-    void readinessContainsConfigurationHealth() {
-        ResponseEntity<Map> response = restTemplate.getForEntity(
+    void readinessContainsConfigurationHealth() throws IOException {
+        ResponseEntity<String> response = restTemplate.getForEntity(
                 "http://localhost:" + port + "/actuator/health/readiness",
-                Map.class);
+                String.class);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody()).containsKey("components");
-        Map components = (Map) response.getBody().get("components");
-        assertThat(components.containsKey("yundocConfiguration")).isTrue();
+        JsonNode body = objectMapper.readTree(response.getBody());
+        assertThat(body.path("components").has("yundocConfiguration")).isTrue();
     }
 }
