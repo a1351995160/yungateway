@@ -17,8 +17,6 @@ public class YundocConfigurationHealthIndicator implements HealthIndicator {
     public Health health() {
         return Health.up()
                 .withDetail("tdsqlRequired", readinessProperties.isTdsqlRequired())
-                .withDetail("redisRequired", readinessProperties.isRedisRequired())
                 .build();
     }
 }
-

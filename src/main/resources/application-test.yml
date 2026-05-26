@@ -9,13 +9,19 @@ management:
   endpoint:
     health:
       show-details: always
-  health:
-    redis:
-      enabled: false
 
 yundoc:
+  admin-auth:
+    username: admin
+    password-digest: e5cc16751bf7202ac04ec29635ca6ff74832220ac2162f15b20218337bba24b7
+    password-salt: admin-salt
+    password-algorithm: HMAC-SHA256
+    jwt-secret: test-admin-jwt-secret-with-enough-length
+    jwt-ttl-seconds: 1800
+  client-secret:
+    pepper: test-client-secret-pepper
+    algorithm: HMAC-SHA256
   jwt:
     issuer: yundoc-gateway-test
     audience: yundoc-business-systems-test
     ttl: 30m
-

@@ -23,13 +23,13 @@ class ApiResponseTest {
 
     @Test
     void failureResponseCarriesErrorAndRequestId() {
-        ErrorResponse error = ErrorResponse.of("YUNDOC_VALIDATION_FAILED", "invalid");
+        ErrorResponse error = ErrorResponse.of("VALIDATION_FAILED", "invalid");
 
         ApiResponse<Void> response = ApiResponse.failure(error, "req-002");
 
         assertThat(response.isSuccess()).isFalse();
         assertThat(response.getData()).isNull();
-        assertThat(response.getError().getCode()).isEqualTo("YUNDOC_VALIDATION_FAILED");
+        assertThat(response.getError().getCode()).isEqualTo("VALIDATION_FAILED");
         assertThat(response.getRequestId()).isEqualTo("req-002");
     }
 
