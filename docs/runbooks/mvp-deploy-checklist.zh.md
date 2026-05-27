@@ -4,7 +4,7 @@
 
 - `.\mvnw.cmd test` 通过。
 - `.\mvnw.cmd -Dtest=MvpSmokeTest test` 通过。
-- Flyway migration 已在目标数据库演练。
+- `src/main/resources/db/schema.sql` 已在目标数据库演练。
 - 日志抽检未出现 `clientSecret` 明文、WPS token、`Authorization` 原文或签名材料。
 
 ## 生产配置
@@ -35,7 +35,7 @@
 
 ## 回滚与应急
 
-- 回滚应用版本前确认 Flyway migration 兼容性。
+- 回滚应用版本前确认目标数据库 schema 与应用版本兼容。
 - 如 `client-secret-pepper` 泄露，立即轮换 pepper，并重置所有业务系统 `clientSecret`。
 - 如业务系统凭据泄露，禁用对应业务系统或重置 `clientSecret`，旧 JWT 会因 `tokenVersion` 变化失效。
 - 如 WPS OAuth 配置错误，暂停 USER 能力入口，保留 APP 能力入口独立验证。
