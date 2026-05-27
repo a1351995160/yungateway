@@ -20,7 +20,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(YundocException.class)
     public ResponseEntity<ApiResponse<Void>> handleYundocException(YundocException exception) {
         YundocErrorCode code = exception.getErrorCode();
-        ErrorResponse error = ErrorResponse.of(code.name(), exception.getMessage(), exception.getUpstreamCategory());
+        ErrorResponse error = ErrorResponse.of(
+                code.name(),
+                exception.getMessage(),
+                exception.getUpstreamCategory(),
+                exception.getDetails());
         return ResponseEntity.status(code.getHttpStatus()).body(ApiResponse.failure(error, requestId()));
     }
 

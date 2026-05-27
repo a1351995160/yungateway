@@ -65,14 +65,13 @@ class UserFileControllerTest {
     }
 
     @Test
-    void rejectsInconsistentUserIdLocations() throws IOException {
+    void rejectsConflictingDuplicateUserIdQuery() throws IOException {
         String token = userFileToken("biz-user-files-bad-user");
-        HttpEntity<String> entity = authorizedJson(token, "{\"userId\":\"user-002\"}");
 
         ResponseEntity<String> response = restTemplate.exchange(
-                url("/api/v1/user/files?userId=user-001"),
+                url("/api/v1/user/files?userId=user-001&userId=user-002"),
                 HttpMethod.GET,
-                entity,
+                authorized(token),
                 String.class);
 
         JsonNode error = objectMapper.readTree(response.getBody()).path("error");
@@ -154,12 +153,6 @@ class UserFileControllerTest {
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(token);
         return new HttpEntity<>(headers);
-    }
-
-    private HttpEntity<String> authorizedJson(String token, String body) {
-        HttpHeaders headers = jsonHeaders();
-        headers.setBearerAuth(token);
-        return new HttpEntity<>(body, headers);
     }
 
     private HttpEntity<String> json(String body) {

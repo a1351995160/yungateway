@@ -10,6 +10,11 @@ public class WpsClientProperties {
     private String baseUrl = "";
     private String previewPath = "";
     private String tokenPath = "";
+    private String fileListPath = "";
+    private String authorizePath = "";
+    private String userTokenPath = "";
+    private String redirectUri = "";
+    private String oAuthScope = "";
     private String appId = "";
     private String appSecret = "";
     private Duration connectTimeout = Duration.ofSeconds(2);
@@ -38,6 +43,46 @@ public class WpsClientProperties {
 
     public void setTokenPath(String tokenPath) {
         this.tokenPath = tokenPath;
+    }
+
+    public String getFileListPath() {
+        return fileListPath;
+    }
+
+    public void setFileListPath(String fileListPath) {
+        this.fileListPath = fileListPath;
+    }
+
+    public String getAuthorizePath() {
+        return authorizePath;
+    }
+
+    public void setAuthorizePath(String authorizePath) {
+        this.authorizePath = authorizePath;
+    }
+
+    public String getUserTokenPath() {
+        return userTokenPath;
+    }
+
+    public void setUserTokenPath(String userTokenPath) {
+        this.userTokenPath = userTokenPath;
+    }
+
+    public String getRedirectUri() {
+        return redirectUri;
+    }
+
+    public void setRedirectUri(String redirectUri) {
+        this.redirectUri = redirectUri;
+    }
+
+    public String getOAuthScope() {
+        return oAuthScope;
+    }
+
+    public void setOAuthScope(String oAuthScope) {
+        this.oAuthScope = oAuthScope;
     }
 
     public String getAppId() {

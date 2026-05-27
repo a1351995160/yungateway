@@ -28,3 +28,6 @@ yundoc:
   wps-client:
     preview-path: /api/preview-links
     token-path: /oauth/token
+    file-list-path: /api/user/files
+    authorize-path: /oauth/authorize
+    user-token-path: /oauth/user-token

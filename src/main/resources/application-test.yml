@@ -30,8 +30,13 @@ yundoc:
     base-url: https://wps.test
     preview-path: /api/preview-links
     token-path: /oauth/token
+    file-list-path: /api/user/files
+    authorize-path: /oauth/authorize
+    user-token-path: /oauth/user-token
+    redirect-uri: https://gateway.test/api/v1/wps/oauth/callback
+    oauth-scope: files.read
     app-id: test-wps-app-id
-    app-secret: test-wps-app-secret
+    app-secret: ${WPS_TEST_APP_SECRET:local-wps-placeholder}
     connect-timeout: 1s
     read-timeout: 1s
     max-retries: 1
