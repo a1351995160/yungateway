@@ -67,9 +67,8 @@ public class LocalOAuthStateCache {
     }
 
     private void removeOneState() {
-        for (String state : states.keySet()) {
-            states.remove(state);
-            return;
-        }
+        states.keySet().stream()
+                .findFirst()
+                .ifPresent(states::remove);
     }
 }

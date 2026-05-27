@@ -2,9 +2,11 @@ package com.wps.yundoc.common.error;
 
 public class YundocException extends RuntimeException {
 
+    private static final long serialVersionUID = 1L;
+
     private final YundocErrorCode errorCode;
     private final String upstreamCategory;
-    private final java.util.Map<String, Object> details;
+    private final transient java.util.Map<String, Object> details;
 
     public YundocException(YundocErrorCode errorCode) {
         this(errorCode, errorCode.getDefaultMessage(), null, null);

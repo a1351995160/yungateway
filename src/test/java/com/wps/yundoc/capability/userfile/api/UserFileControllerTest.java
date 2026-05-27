@@ -7,6 +7,9 @@ import com.wps.yundoc.businesssystem.api.BusinessSystemCreateRequest;
 import com.wps.yundoc.businesssystem.api.BusinessSystemCreateResponse;
 import com.wps.yundoc.businesssystem.application.BusinessSystemAdminService;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
@@ -22,6 +25,7 @@ import org.springframework.test.context.ActiveProfiles;
 import java.io.IOException;
 import java.net.URI;
 import java.util.Collections;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -53,52 +57,19 @@ class UserFileControllerTest {
         assertThat(error.path("details").path("authorizeUrl").asText()).contains("state=");
     }
 
-    @Test
-    void rejectsMissingUserId() throws IOException {
-        String token = userFileToken("biz-user-files-missing-user");
+    @ParameterizedTest
+    @MethodSource("invalidUserFileQueries")
+    void rejectsInvalidUserFileQuery(
+            String businessSystemId,
+            String query,
+            String expectedCode) throws IOException {
+        String token = userFileToken(businessSystemId);
 
-        ResponseEntity<String> response = getFiles(token, "");
-
-        JsonNode error = objectMapper.readTree(response.getBody()).path("error");
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-        assertThat(error.path("code").asText()).isEqualTo("USER_ID_REQUIRED");
-    }
-
-    @Test
-    void rejectsConflictingDuplicateUserIdQuery() throws IOException {
-        String token = userFileToken("biz-user-files-bad-user");
-
-        ResponseEntity<String> response = restTemplate.exchange(
-                url("/api/v1/user/files?userId=user-001&userId=user-002"),
-                HttpMethod.GET,
-                authorized(token),
-                String.class);
+        ResponseEntity<String> response = getFiles(token, query);
 
         JsonNode error = objectMapper.readTree(response.getBody()).path("error");
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-        assertThat(error.path("code").asText()).isEqualTo("VALIDATION_FAILED");
-    }
-
-    @Test
-    void rejectsInvalidQueryShape() throws IOException {
-        String token = userFileToken("biz-user-files-invalid-shape");
-
-        ResponseEntity<String> response = getFiles(token, "?userId=bad user");
-
-        JsonNode error = objectMapper.readTree(response.getBody()).path("error");
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-        assertThat(error.path("code").asText()).isEqualTo("VALIDATION_FAILED");
-    }
-
-    @Test
-    void rejectsBlankUserIdQuery() throws IOException {
-        String token = userFileToken("biz-user-files-blank-user");
-
-        ResponseEntity<String> response = getFiles(token, "?userId=%20");
-
-        JsonNode error = objectMapper.readTree(response.getBody()).path("error");
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-        assertThat(error.path("code").asText()).isEqualTo("VALIDATION_FAILED");
+        assertThat(error.path("code").asText()).isEqualTo(expectedCode);
     }
 
     @Test
@@ -125,6 +96,17 @@ class UserFileControllerTest {
                 HttpMethod.GET,
                 authorized(token),
                 String.class);
+    }
+
+    private static Stream<Arguments> invalidUserFileQueries() {
+        return Stream.of(
+                Arguments.of("biz-user-files-missing-user", "", "USER_ID_REQUIRED"),
+                Arguments.of(
+                        "biz-user-files-bad-user",
+                        "?userId=user-001&userId=user-002",
+                        "VALIDATION_FAILED"),
+                Arguments.of("biz-user-files-invalid-shape", "?userId=bad user", "VALIDATION_FAILED"),
+                Arguments.of("biz-user-files-blank-user", "?userId=%20", "VALIDATION_FAILED"));
     }
 
     private String stateFrom(ResponseEntity<String> response) throws IOException {

@@ -49,8 +49,9 @@ class WpsFileClientTest {
         WpsFileHttpClient client = new WpsFileHttpClient(properties(), new RestTemplateBuilder(), restTemplate);
         server.expect(once(), requestTo("https://wps.test/api/user/files?parentFileId=root&limit=20"))
                 .andRespond(withServerError());
+        WpsFileListRequest listRequest = request();
 
-        assertThatThrownBy(() -> client.listFiles(request()))
+        assertThatThrownBy(() -> client.listFiles(listRequest))
                 .isInstanceOf(YundocException.class)
                 .hasFieldOrPropertyWithValue("errorCode", YundocErrorCode.WPS_UPSTREAM_ERROR);
     }

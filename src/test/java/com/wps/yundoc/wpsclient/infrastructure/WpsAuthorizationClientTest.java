@@ -25,10 +25,11 @@ class WpsAuthorizationClientTest {
 
         String authorizeUrl = client.authorizeUrl("state-001");
 
-        assertThat(authorizeUrl).contains("https://wps.test/oauth/authorize");
-        assertThat(authorizeUrl).contains("client_id=wps-app");
-        assertThat(authorizeUrl).contains("scope=files.read");
-        assertThat(authorizeUrl).contains("state=state-001");
+        assertThat(authorizeUrl).contains(
+                "https://wps.test/oauth/authorize",
+                "client_id=wps-app",
+                "scope=files.read",
+                "state=state-001");
     }
 
     @Test

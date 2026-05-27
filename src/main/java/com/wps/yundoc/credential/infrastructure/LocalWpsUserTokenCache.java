@@ -73,9 +73,8 @@ public class LocalWpsUserTokenCache {
     }
 
     private void removeOneToken() {
-        for (String userId : tokens.keySet()) {
-            tokens.remove(userId);
-            return;
-        }
+        tokens.keySet().stream()
+                .findFirst()
+                .ifPresent(tokens::remove);
     }
 }
