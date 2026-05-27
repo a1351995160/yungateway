@@ -13,9 +13,9 @@ management:
 yundoc:
   admin-auth:
     username: admin
-    password-digest: e5cc16751bf7202ac04ec29635ca6ff74832220ac2162f15b20218337bba24b7
-    password-salt: admin-salt
-    password-algorithm: HMAC-SHA256
+    login-digest: e5cc16751bf7202ac04ec29635ca6ff74832220ac2162f15b20218337bba24b7
+    login-salt: admin-salt
+    login-algorithm: HMAC-SHA256
     jwt-secret: test-admin-jwt-secret-with-enough-length
     jwt-ttl-seconds: 1800
   client-secret:
@@ -26,3 +26,22 @@ yundoc:
     audience: yundoc-business-systems-test
     secret: test-business-jwt-secret-with-enough-length
     ttl: 30m
+  wps-client:
+    base-url: https://wps.test
+    preview-path: /api/preview-links
+    token-path: /oauth/token
+    file-list-path: /api/user/files
+    authorize-path: /oauth/authorize
+    user-token-path: /oauth/user-token
+    redirect-uri: https://gateway.test/api/v1/wps/oauth/callback
+    oauth-scope: files.read
+    app-id: test-wps-app-id
+    app-secret: ${WPS_TEST_APP_SECRET:local-wps-placeholder}
+    connect-timeout: 1s
+    read-timeout: 1s
+    max-retries: 1
+  wps-credential:
+    refresh-skew: 5m
+    max-user-token-count: 10000
+  wps-user-authorization:
+    max-state-count: 10000

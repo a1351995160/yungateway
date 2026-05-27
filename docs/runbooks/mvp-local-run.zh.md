@@ -30,8 +30,8 @@
 
 `local` 与 `test` profile 会启用 mock WPS client：
 
-- APP 预览返回 `https://mock.wps.local/previews/{fileId}`
-- USER OAuth 授权地址返回 `https://mock.wps.local/oauth/authorize?...`
+- APP 预览返回 `https://preview.test/files/{fileId}`
+- USER OAuth 授权地址返回 `https://wps.test/oauth/authorize?...`
 - OAuth callback 使用 mock code 换取本地 USER token
 - USER 文件列表返回固定 mock 文件
 
@@ -44,7 +44,7 @@
 5. `POST /api/v1/app/previews` 调用 APP 预览
 6. `GET /api/v1/user/files?userId={userId}` 获取 `REAUTH_REQUIRED.error.details.authorizeUrl`
 7. 访问 `GET /api/v1/wps/oauth/callback?code=mock-code&state={state}`
-8. 再次调用 `GET /api/v1/user/files?userId={userId}` 获取文件列表
+8. 再次调用 `GET /api/v1/user/files?userId={userId}` 获取文件列表，响应字段为 `data.items` 与 `data.nextCursor`
 
 ## 关键配置
 

@@ -19,15 +19,15 @@ public class AdminAuthProperties {
 
     @NotBlank
     @Pattern(regexp = "^[a-fA-F0-9]{64}$")
-    private String passwordDigest;
+    private String loginDigest;
 
     @NotBlank
     @Size(max = 64)
-    private String passwordSalt;
+    private String loginSalt;
 
     @NotBlank
     @Size(max = 32)
-    private String passwordAlgorithm = "HMAC-SHA256";
+    private String loginAlgorithm = "HMAC-SHA256";
 
     @NotBlank
     @Size(min = 32, max = 256)
@@ -45,28 +45,28 @@ public class AdminAuthProperties {
         this.username = username;
     }
 
-    public String getPasswordDigest() {
-        return passwordDigest;
+    public String getLoginDigest() {
+        return loginDigest;
     }
 
-    public void setPasswordDigest(String passwordDigest) {
-        this.passwordDigest = passwordDigest;
+    public void setLoginDigest(String loginDigest) {
+        this.loginDigest = loginDigest;
     }
 
-    public String getPasswordSalt() {
-        return passwordSalt;
+    public String getLoginSalt() {
+        return loginSalt;
     }
 
-    public void setPasswordSalt(String passwordSalt) {
-        this.passwordSalt = passwordSalt;
+    public void setLoginSalt(String loginSalt) {
+        this.loginSalt = loginSalt;
     }
 
-    public String getPasswordAlgorithm() {
-        return passwordAlgorithm;
+    public String getLoginAlgorithm() {
+        return loginAlgorithm;
     }
 
-    public void setPasswordAlgorithm(String passwordAlgorithm) {
-        this.passwordAlgorithm = passwordAlgorithm;
+    public void setLoginAlgorithm(String loginAlgorithm) {
+        this.loginAlgorithm = loginAlgorithm;
     }
 
     public String getJwtSecret() {

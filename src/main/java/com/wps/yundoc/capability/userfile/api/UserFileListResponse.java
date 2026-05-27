@@ -1,22 +1,34 @@
 package com.wps.yundoc.capability.userfile.api;
 
+import com.wps.yundoc.capability.userfile.application.UserFileListResult;
+import com.wps.yundoc.wpsclient.application.WpsFileItem;
+
+import java.util.ArrayList;
 import java.util.List;
 
 public class UserFileListResponse {
 
-    private final String userId;
-    private final List<UserFileResponse> files;
+    private final List<UserFileItemResponse> items;
+    private final String nextCursor;
 
-    public UserFileListResponse(String userId, List<UserFileResponse> files) {
-        this.userId = userId;
-        this.files = files;
+    public UserFileListResponse(UserFileListResult result) {
+        this.items = toItems(result.getItems());
+        this.nextCursor = result.getNextCursor();
     }
 
-    public String getUserId() {
-        return userId;
+    public List<UserFileItemResponse> getItems() {
+        return items;
     }
 
-    public List<UserFileResponse> getFiles() {
-        return files;
+    public String getNextCursor() {
+        return nextCursor;
+    }
+
+    private List<UserFileItemResponse> toItems(List<WpsFileItem> items) {
+        List<UserFileItemResponse> responses = new ArrayList<>();
+        for (WpsFileItem item : items) {
+            responses.add(new UserFileItemResponse(item));
+        }
+        return responses;
     }
 }

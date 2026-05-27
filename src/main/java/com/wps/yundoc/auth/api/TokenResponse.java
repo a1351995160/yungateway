@@ -6,8 +6,9 @@ import java.util.List;
 
 public class TokenResponse {
 
+    private static final String TOKEN_TYPE = "Bearer";
+
     private final String accessToken;
-    private final String tokenType = "Bearer";
     private final long expiresIn;
     private final List<String> apiPermissions;
 
@@ -22,7 +23,7 @@ public class TokenResponse {
     }
 
     public String getTokenType() {
-        return tokenType;
+        return TOKEN_TYPE;
     }
 
     public long getExpiresIn() {

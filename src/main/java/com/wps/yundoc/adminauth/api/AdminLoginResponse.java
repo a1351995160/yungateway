@@ -4,7 +4,8 @@ import com.wps.yundoc.adminauth.application.AdminJwt;
 
 public class AdminLoginResponse {
 
-    private final String tokenType = "Bearer";
+    private static final String TOKEN_TYPE = "Bearer";
+
     private final String adminJwt;
     private final long expiresInSeconds;
 
@@ -14,7 +15,7 @@ public class AdminLoginResponse {
     }
 
     public String getTokenType() {
-        return tokenType;
+        return TOKEN_TYPE;
     }
 
     public String getAdminJwt() {

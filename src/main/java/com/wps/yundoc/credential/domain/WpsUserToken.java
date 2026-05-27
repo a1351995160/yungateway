@@ -1,28 +1,22 @@
 package com.wps.yundoc.credential.domain;
 
-import java.time.Instant;
+import java.time.OffsetDateTime;
 
 public class WpsUserToken {
 
-    private final String userId;
     private final String accessToken;
-    private final Instant expiresAt;
+    private final OffsetDateTime expiresAt;
 
-    public WpsUserToken(String userId, String accessToken, Instant expiresAt) {
-        this.userId = userId;
+    public WpsUserToken(String accessToken, OffsetDateTime expiresAt) {
         this.accessToken = accessToken;
         this.expiresAt = expiresAt;
-    }
-
-    public String getUserId() {
-        return userId;
     }
 
     public String getAccessToken() {
         return accessToken;
     }
 
-    public Instant getExpiresAt() {
+    public OffsetDateTime getExpiresAt() {
         return expiresAt;
     }
 }

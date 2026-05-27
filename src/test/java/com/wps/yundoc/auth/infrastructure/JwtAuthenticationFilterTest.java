@@ -24,7 +24,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
@@ -53,30 +53,30 @@ class JwtAuthenticationFilterTest {
     @Test
     void buildsRequestContextBeforeCapabilityController() throws IOException {
         BusinessSystemCreateResponse created = createBusinessSystem("biz-filter-ok");
-        adminService.savePermissions("biz-filter-ok", permissions("app-preview:create"));
+        adminService.savePermissions("biz-filter-ok", permissions("user-files:list"));
         String token = accessToken(created);
 
         ResponseEntity<String> response = restTemplate.exchange(
                 url("/api/v1/test/capability"),
-                HttpMethod.POST,
+                HttpMethod.GET,
                 authorized(token),
                 String.class);
 
         JsonNode body = objectMapper.readTree(response.getBody());
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(body.path("data").path("businessSystemId").asText()).isEqualTo("biz-filter-ok");
-        assertThat(body.path("data").path("apiCode").asText()).isEqualTo("app-preview:create");
+        assertThat(body.path("data").path("apiCode").asText()).isEqualTo("user-files:list");
     }
 
     @Test
     void rejectsCapabilityRequestWithoutPermission() {
         BusinessSystemCreateResponse created = createBusinessSystem("biz-filter-denied");
-        adminService.savePermissions("biz-filter-denied", permissions("user-files:list"));
+        adminService.savePermissions("biz-filter-denied", permissions("app-preview:create"));
         String token = accessToken(created);
 
         ResponseEntity<String> response = restTemplate.exchange(
                 url("/api/v1/test/capability"),
-                HttpMethod.POST,
+                HttpMethod.GET,
                 authorized(token),
                 String.class);
 
@@ -144,27 +144,14 @@ class JwtAuthenticationFilterTest {
         @Bean
         @Primary
         CapabilityRoutePolicy testCapabilityRoutePolicy() {
-            return new CapabilityRoutePolicy() {
-                @Override
-                public Optional<String> resolve(HttpServletRequest request) {
-                    if (isTestCapabilityRoute(request)) {
-                        return Optional.of("app-preview:create");
-                    }
-                    return super.resolve(request);
-                }
-
-                private boolean isTestCapabilityRoute(HttpServletRequest request) {
-                    return "POST".equals(request.getMethod())
-                            && "/api/v1/test/capability".equals(request.getServletPath());
-                }
-            };
+            return new TestCapabilityRoutePolicy();
         }
     }
 
     @RestController
     static class CapabilityTestController {
 
-        @PostMapping("/api/v1/test/capability")
+        @GetMapping("/api/v1/test/capability")
         public ApiResponse<CapabilityContextResponse> preview() {
             RequestContext context = RequestContextHolder.current()
                     .orElseThrow(() -> new IllegalStateException("request context is required"));
@@ -172,6 +159,17 @@ class JwtAuthenticationFilterTest {
                     context.getBusinessSystemId(),
                     context.getApiCode());
             return ApiResponse.success(response, context.getRequestId());
+        }
+    }
+
+    static class TestCapabilityRoutePolicy extends CapabilityRoutePolicy {
+
+        @Override
+        public Optional<String> resolve(HttpServletRequest request) {
+            if ("/api/v1/test/capability".equals(request.getRequestURI())) {
+                return Optional.of("user-files:list");
+            }
+            return Optional.empty();
         }
     }
 

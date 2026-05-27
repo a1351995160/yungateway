@@ -1,20 +1,22 @@
 package com.wps.yundoc.capability.apppreview.api;
 
+import com.wps.yundoc.capability.apppreview.application.AppPreviewResult;
+
 public class AppPreviewResponse {
 
-    private final String fileId;
     private final String previewUrl;
+    private final String expireAt;
 
-    public AppPreviewResponse(String fileId, String previewUrl) {
-        this.fileId = fileId;
-        this.previewUrl = previewUrl;
-    }
-
-    public String getFileId() {
-        return fileId;
+    public AppPreviewResponse(AppPreviewResult result) {
+        this.previewUrl = result.getPreviewUrl();
+        this.expireAt = result.getExpireAt().toString();
     }
 
     public String getPreviewUrl() {
         return previewUrl;
+    }
+
+    public String getExpireAt() {
+        return expireAt;
     }
 }

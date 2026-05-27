@@ -1,15 +1,15 @@
 package com.wps.yundoc.credential.domain;
 
-import java.time.Instant;
+import java.time.OffsetDateTime;
 
 public class OAuthState {
 
     private final String state;
     private final String userId;
     private final String businessSystemId;
-    private final Instant expiresAt;
+    private final OffsetDateTime expiresAt;
 
-    public OAuthState(String state, String userId, String businessSystemId, Instant expiresAt) {
+    public OAuthState(String state, String userId, String businessSystemId, OffsetDateTime expiresAt) {
         this.state = state;
         this.userId = userId;
         this.businessSystemId = businessSystemId;
@@ -28,7 +28,7 @@ public class OAuthState {
         return businessSystemId;
     }
 
-    public Instant getExpiresAt() {
+    public OffsetDateTime getExpiresAt() {
         return expiresAt;
     }
 }

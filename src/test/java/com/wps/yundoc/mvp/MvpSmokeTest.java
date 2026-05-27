@@ -47,11 +47,12 @@ class MvpSmokeTest {
         callback(state);
         JsonNode files = getUserFiles(accessToken, HttpStatus.OK);
 
-        assertThat(preview.path("data").path("previewUrl").asText()).startsWith("https://mock.wps.local/previews/");
+        assertThat(preview.path("data").path("previewUrl").asText()).startsWith("https://preview.test/files/");
+        assertThat(preview.path("data").path("expireAt").asText()).isNotBlank();
         assertThat(reauth.path("error").path("code").asText()).isEqualTo("REAUTH_REQUIRED");
         assertThat(reauth.path("error").path("details").path("authorizeUrl").asText()).contains("state=");
-        assertThat(files.path("data").path("files")).hasSizeGreaterThan(0);
-        assertThat(files.path("data").path("files").get(0).path("fileId").asText()).isNotBlank();
+        assertThat(files.path("data").path("items")).hasSizeGreaterThan(0);
+        assertThat(files.path("data").path("items").get(0).path("fileId").asText()).isNotBlank();
     }
 
     private String adminJwt() throws IOException {
@@ -96,7 +97,7 @@ class MvpSmokeTest {
     private JsonNode postAppPreview(String accessToken) throws IOException {
         ResponseEntity<String> response = restTemplate.postForEntity(
                 url("/api/v1/app/previews"),
-                bearer(accessToken, "{\"fileId\":\"mock-file-1\"}"),
+                bearer(accessToken, previewJson("wps-file-001")),
                 String.class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         return body(response);
@@ -122,6 +123,11 @@ class MvpSmokeTest {
                 URI.create(url("/api/v1/wps/oauth/callback?code=mock-code&state=" + state)),
                 String.class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+    }
+
+    private String previewJson(String fileId) {
+        return "{\"source\":{\"type\":\"WPS_FILE\",\"fileId\":\"" + fileId
+                + "\"},\"options\":{\"expireSeconds\":3600}}";
     }
 
     private HttpEntity<String> authorized(String adminJwt, String body) {

@@ -27,7 +27,11 @@ public class ErrorResponse {
         return new ErrorResponse(code, message, upstreamCategory, null);
     }
 
-    public static ErrorResponse of(String code, String message, String upstreamCategory, Map<String, Object> details) {
+    public static ErrorResponse of(
+            String code,
+            String message,
+            String upstreamCategory,
+            Map<String, Object> details) {
         return new ErrorResponse(code, message, upstreamCategory, details);
     }
 
@@ -47,4 +51,3 @@ public class ErrorResponse {
         return details;
     }
 }
-

@@ -18,6 +18,8 @@ import javax.validation.Valid;
 @RequestMapping("/api/v1/admin/business-systems")
 public class BusinessSystemAdminController {
 
+    private static final String REQUEST_ID_UNKNOWN = "unknown";
+
     private final AdminAuthService adminAuthService;
     private final BusinessSystemAdminService businessSystemAdminService;
 
@@ -34,7 +36,7 @@ public class BusinessSystemAdminController {
             @Valid @RequestBody BusinessSystemCreateRequest request) {
         adminAuthService.requireAdmin(authorization);
         BusinessSystemCreateResponse response = businessSystemAdminService.create(request);
-        return ApiResponse.success(response, "unknown");
+        return ApiResponse.success(response, REQUEST_ID_UNKNOWN);
     }
 
     @GetMapping("/{businessSystemId}")
@@ -43,7 +45,7 @@ public class BusinessSystemAdminController {
             @PathVariable String businessSystemId) {
         adminAuthService.requireAdmin(authorization);
         BusinessSystemResponse response = businessSystemAdminService.get(businessSystemId);
-        return ApiResponse.success(response, "unknown");
+        return ApiResponse.success(response, REQUEST_ID_UNKNOWN);
     }
 
     @PutMapping("/{businessSystemId}/api-permissions")
@@ -53,7 +55,7 @@ public class BusinessSystemAdminController {
             @Valid @RequestBody BusinessSystemApiPermissionUpdateRequest request) {
         adminAuthService.requireAdmin(authorization);
         BusinessSystemResponse response = businessSystemAdminService.savePermissions(businessSystemId, request);
-        return ApiResponse.success(response, "unknown");
+        return ApiResponse.success(response, REQUEST_ID_UNKNOWN);
     }
 
     @GetMapping("/{businessSystemId}/api-permissions")
@@ -61,8 +63,8 @@ public class BusinessSystemAdminController {
             @RequestHeader(value = "Authorization", required = false) String authorization,
             @PathVariable String businessSystemId) {
         adminAuthService.requireAdmin(authorization);
-        BusinessSystemResponse response = businessSystemAdminService.get(businessSystemId);
-        return ApiResponse.success(response, "unknown");
+        BusinessSystemResponse response = businessSystemAdminService.getPermissions(businessSystemId);
+        return ApiResponse.success(response, REQUEST_ID_UNKNOWN);
     }
 
     @PostMapping("/{businessSystemId}/client-secret:reset")
@@ -71,6 +73,6 @@ public class BusinessSystemAdminController {
             @PathVariable String businessSystemId) {
         adminAuthService.requireAdmin(authorization);
         BusinessSystemSecretResponse response = businessSystemAdminService.resetClientSecret(businessSystemId);
-        return ApiResponse.success(response, "unknown");
+        return ApiResponse.success(response, REQUEST_ID_UNKNOWN);
     }
 }

@@ -1,90 +1,77 @@
 package com.wps.yundoc.credential.application;
 
-import com.wps.yundoc.common.context.RequestContext;
-import com.wps.yundoc.common.context.RequestContextHolder;
 import com.wps.yundoc.common.error.YundocErrorCode;
 import com.wps.yundoc.common.error.YundocException;
 import com.wps.yundoc.credential.domain.OAuthState;
-import com.wps.yundoc.credential.domain.WpsOAuthCallbackResult;
 import com.wps.yundoc.credential.domain.WpsUserToken;
 import com.wps.yundoc.credential.infrastructure.LocalOAuthStateCache;
 import com.wps.yundoc.credential.infrastructure.LocalWpsUserTokenCache;
+import com.wps.yundoc.credential.infrastructure.WpsUserAuthorizationProperties;
 import com.wps.yundoc.wpsclient.application.WpsAuthorizationClient;
 import org.springframework.stereotype.Service;
 
-import java.time.Clock;
-import java.time.Instant;
-import java.util.Collections;
+import java.time.OffsetDateTime;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 
 @Service
 public class WpsUserAuthorizationService {
 
-    private static final long STATE_TTL_SECONDS = 300L;
-
-    private final LocalOAuthStateCache stateCache;
     private final LocalWpsUserTokenCache tokenCache;
+    private final LocalOAuthStateCache stateCache;
     private final WpsAuthorizationClient authorizationClient;
-    private final Clock clock;
+    private final WpsUserAuthorizationProperties properties;
 
     public WpsUserAuthorizationService(
-            LocalOAuthStateCache stateCache,
             LocalWpsUserTokenCache tokenCache,
-            WpsAuthorizationClient authorizationClient) {
-        this.stateCache = stateCache;
+            LocalOAuthStateCache stateCache,
+            WpsAuthorizationClient authorizationClient,
+            WpsUserAuthorizationProperties properties) {
         this.tokenCache = tokenCache;
+        this.stateCache = stateCache;
         this.authorizationClient = authorizationClient;
-        this.clock = Clock.systemUTC();
+        this.properties = properties;
     }
 
-    public WpsUserToken requireToken(String userId) {
-        requireUserId(userId);
-        return tokenCache.get(userId).orElseThrow(() -> reauthRequired(userId));
+    public WpsUserToken requireUserToken(String userId, String businessSystemId) {
+        return tokenCache.get(userId).orElseThrow(() -> reauthRequired(userId, businessSystemId));
     }
 
-    public WpsOAuthCallbackResult completeAuthorization(String code, String state) {
-        OAuthState oauthState = stateCache.consume(state).orElseThrow(this::invalidState);
-        requireFresh(oauthState);
-        WpsUserToken token = authorizationClient.exchangeCode(code, oauthState.getUserId());
-        tokenCache.put(token);
-        return new WpsOAuthCallbackResult(oauthState.getUserId());
+    public void handleCallback(String code, String stateValue) {
+        String validCode = requiredText(code);
+        String validState = requiredText(stateValue);
+        OAuthState state = validState(validState);
+        WpsUserToken token = authorizationClient.exchangeCode(validCode);
+        tokenCache.put(state.getUserId(), token);
     }
 
-    private void requireUserId(String userId) {
-        if (userId == null || userId.trim().isEmpty()) {
-            throw new YundocException(YundocErrorCode.USER_ID_REQUIRED);
+    private String requiredText(String value) {
+        if (hasText(value)) {
+            return value.trim();
         }
+        throw new YundocException(YundocErrorCode.VALIDATION_FAILED);
     }
 
-    private YundocException reauthRequired(String userId) {
-        OAuthState state = new OAuthState(newState(), userId, businessSystemId(), expiresAt());
-        stateCache.put(state);
-        Map<String, Object> details = Collections.singletonMap("authorizeUrl", authorizationClient.authorizeUrl(state));
-        return new YundocException(YundocErrorCode.REAUTH_REQUIRED, YundocErrorCode.REAUTH_REQUIRED.getDefaultMessage(), details);
+    private OAuthState validState(String stateValue) {
+        return stateCache.take(stateValue)
+                .orElseThrow(() -> new YundocException(YundocErrorCode.VALIDATION_FAILED));
     }
 
-    private String newState() {
-        return UUID.randomUUID().toString();
+    private YundocException reauthRequired(String userId, String businessSystemId) {
+        String state = UUID.randomUUID().toString();
+        OffsetDateTime expiresAt = OffsetDateTime.now().plus(properties.getStateTtl());
+        stateCache.put(new OAuthState(state, userId, businessSystemId, expiresAt));
+        Map<String, Object> details = new LinkedHashMap<>();
+        details.put("authorizeUrl", authorizationClient.authorizeUrl(state));
+        details.put("expiresIn", Long.valueOf(properties.getStateTtl().getSeconds()));
+        return new YundocException(YundocErrorCode.REAUTH_REQUIRED, details);
     }
 
-    private String businessSystemId() {
-        return RequestContextHolder.current()
-                .map(RequestContext::getBusinessSystemId)
-                .orElse("unknown");
-    }
-
-    private Instant expiresAt() {
-        return clock.instant().plusSeconds(STATE_TTL_SECONDS);
-    }
-
-    private void requireFresh(OAuthState oauthState) {
-        if (oauthState.getExpiresAt().isBefore(clock.instant())) {
-            throw invalidState();
+    private boolean hasText(String value) {
+        if (value == null) {
+            return false;
         }
-    }
-
-    private YundocException invalidState() {
-        return new YundocException(YundocErrorCode.VALIDATION_FAILED, "OAuth state is invalid");
+        return !value.trim().isEmpty();
     }
 }
