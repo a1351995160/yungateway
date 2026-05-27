@@ -60,11 +60,12 @@ class SchemaPolicyTest {
                 .map(SchemaPolicyTest::readSqlUnchecked)
                 .collect(Collectors.joining("\n"));
 
-        assertThat(sql).contains("create table biz_system");
-        assertThat(sql).contains("create table biz_system_api_permission");
-        assertThat(sql).contains("primary key (business_system_id)");
-        assertThat(sql).contains("unique key uk_biz_system_client (client_id)");
-        assertThat(sql).contains("primary key (business_system_id, api_code)");
+        assertThat(sql).contains(
+                "create table biz_system",
+                "create table biz_system_api_permission",
+                "primary key (business_system_id)",
+                "unique key uk_biz_system_client (client_id)",
+                "primary key (business_system_id, api_code)");
     }
 
     private static List<Path> migrationFiles() throws IOException {

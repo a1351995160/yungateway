@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
 
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest
@@ -37,7 +38,8 @@ class BusinessSystemApiPermissionServiceTest {
         adminService.savePermissions("biz-permission-allowed", permissions("app-preview:create"));
         BusinessSystemPrincipal principal = principal(created);
 
-        permissionService.requirePermission(principal, "app-preview:create");
+        assertThatCode(() -> permissionService.requirePermission(principal, "app-preview:create"))
+                .doesNotThrowAnyException();
     }
 
     @Test
