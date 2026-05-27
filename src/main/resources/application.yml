@@ -31,3 +31,7 @@ yundoc:
     file-list-path: /api/user/files
     authorize-path: /oauth/authorize
     user-token-path: /oauth/user-token
+  wps-credential:
+    max-user-token-count: 10000
+  wps-user-authorization:
+    max-state-count: 10000

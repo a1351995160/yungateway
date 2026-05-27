@@ -8,6 +8,7 @@ import java.time.Duration;
 public class WpsUserAuthorizationProperties {
 
     private Duration stateTtl = Duration.ofMinutes(5);
+    private int maxStateCount = 10000;
 
     public Duration getStateTtl() {
         return stateTtl;
@@ -15,5 +16,13 @@ public class WpsUserAuthorizationProperties {
 
     public void setStateTtl(Duration stateTtl) {
         this.stateTtl = stateTtl;
+    }
+
+    public int getMaxStateCount() {
+        return maxStateCount;
+    }
+
+    public void setMaxStateCount(int maxStateCount) {
+        this.maxStateCount = maxStateCount;
     }
 }

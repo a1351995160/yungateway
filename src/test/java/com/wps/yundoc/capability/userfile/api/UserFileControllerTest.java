@@ -80,6 +80,28 @@ class UserFileControllerTest {
     }
 
     @Test
+    void rejectsInvalidQueryShape() throws IOException {
+        String token = userFileToken("biz-user-files-invalid-shape");
+
+        ResponseEntity<String> response = getFiles(token, "?userId=bad user");
+
+        JsonNode error = objectMapper.readTree(response.getBody()).path("error");
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(error.path("code").asText()).isEqualTo("VALIDATION_FAILED");
+    }
+
+    @Test
+    void rejectsBlankUserIdQuery() throws IOException {
+        String token = userFileToken("biz-user-files-blank-user");
+
+        ResponseEntity<String> response = getFiles(token, "?userId=%20");
+
+        JsonNode error = objectMapper.readTree(response.getBody()).path("error");
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(error.path("code").asText()).isEqualTo("VALIDATION_FAILED");
+    }
+
+    @Test
     void callbackStoresTokenAndFileListSucceeds() throws IOException {
         String token = userFileToken("biz-user-files-success");
         ResponseEntity<String> first = getFiles(token, "?userId=user-003");

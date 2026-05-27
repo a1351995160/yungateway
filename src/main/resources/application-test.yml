@@ -42,3 +42,6 @@ yundoc:
     max-retries: 1
   wps-credential:
     refresh-skew: 5m
+    max-user-token-count: 10000
+  wps-user-authorization:
+    max-state-count: 10000

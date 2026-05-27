@@ -39,9 +39,18 @@ public class WpsUserAuthorizationService {
     }
 
     public void handleCallback(String code, String stateValue) {
-        OAuthState state = validState(stateValue);
-        WpsUserToken token = authorizationClient.exchangeCode(code);
+        String validCode = requiredText(code);
+        String validState = requiredText(stateValue);
+        OAuthState state = validState(validState);
+        WpsUserToken token = authorizationClient.exchangeCode(validCode);
         tokenCache.put(state.getUserId(), token);
+    }
+
+    private String requiredText(String value) {
+        if (hasText(value)) {
+            return value.trim();
+        }
+        throw new YundocException(YundocErrorCode.VALIDATION_FAILED);
     }
 
     private OAuthState validState(String stateValue) {
@@ -57,5 +66,12 @@ public class WpsUserAuthorizationService {
         details.put("authorizeUrl", authorizationClient.authorizeUrl(state));
         details.put("expiresIn", Long.valueOf(properties.getStateTtl().getSeconds()));
         return new YundocException(YundocErrorCode.REAUTH_REQUIRED, details);
+    }
+
+    private boolean hasText(String value) {
+        if (value == null) {
+            return false;
+        }
+        return !value.trim().isEmpty();
     }
 }

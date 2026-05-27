@@ -14,10 +14,18 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.regex.Pattern;
 
 @RestController
 @RequestMapping("/api/v1/user/files")
 public class UserFileController {
+
+    private static final int MAX_LIMIT = 200;
+    private static final int MAX_USER_ID_LENGTH = 128;
+    private static final int MAX_PARENT_FILE_ID_LENGTH = 128;
+    private static final int MAX_CURSOR_LENGTH = 512;
+    private static final Pattern USER_ID_PATTERN = Pattern.compile("^[A-Za-z0-9._:@-]+$");
+    private static final Pattern RESOURCE_PATTERN = Pattern.compile("^[A-Za-z0-9._:@/+=-]+$");
 
     private final UserFileService userFileService;
 
@@ -40,19 +48,24 @@ public class UserFileController {
             String parentFileId,
             int limit,
             String cursor) {
+        String normalizedParentFileId = normalized(parentFileId);
+        String normalizedCursor = normalized(cursor);
+        validateResource(normalizedParentFileId, MAX_PARENT_FILE_ID_LENGTH);
+        validateResource(normalizedCursor, MAX_CURSOR_LENGTH);
         return new UserFileListCommand(
                 queryUserId(queryUserIds),
                 businessSystemId(),
-                parentFileId,
-                limit,
-                cursor);
+                normalizedParentFileId,
+                validatedLimit(limit),
+                normalizedCursor);
     }
 
     private String queryUserId(List<String> queryUserIds) {
         if (hasNoQueryUserId(queryUserIds)) {
             return null;
         }
-        String first = queryUserIds.get(0);
+        String first = requiredUserId(queryUserIds.get(0));
+        validateUserId(first);
         for (String userId : queryUserIds) {
             validateSameUserId(first, userId);
         }
@@ -60,8 +73,49 @@ public class UserFileController {
     }
 
     private void validateSameUserId(String first, String current) {
-        if (first.equals(current)) {
+        String currentUserId = requiredUserId(current);
+        if (sameText(first, currentUserId)) {
             return;
+        }
+        throw new YundocException(YundocErrorCode.VALIDATION_FAILED);
+    }
+
+    private void validateUserId(String userId) {
+        if (userId == null) {
+            return;
+        }
+        validateLength(userId, MAX_USER_ID_LENGTH);
+        validatePattern(userId, USER_ID_PATTERN);
+    }
+
+    private void validateResource(String value, int maxLength) {
+        if (value == null) {
+            return;
+        }
+        validateLength(value, maxLength);
+        validatePattern(value, RESOURCE_PATTERN);
+    }
+
+    private void validateLength(String value, int maxLength) {
+        if (value.length() <= maxLength) {
+            return;
+        }
+        throw new YundocException(YundocErrorCode.VALIDATION_FAILED);
+    }
+
+    private void validatePattern(String value, Pattern pattern) {
+        if (pattern.matcher(value).matches()) {
+            return;
+        }
+        throw new YundocException(YundocErrorCode.VALIDATION_FAILED);
+    }
+
+    private int validatedLimit(int limit) {
+        if (limit <= 0) {
+            throw new YundocException(YundocErrorCode.VALIDATION_FAILED);
+        }
+        if (limit <= MAX_LIMIT) {
+            return limit;
         }
         throw new YundocException(YundocErrorCode.VALIDATION_FAILED);
     }
@@ -91,5 +145,26 @@ public class UserFileController {
             return true;
         }
         return queryUserIds.isEmpty();
+    }
+
+    private String requiredUserId(String value) {
+        if (hasText(value)) {
+            return value.trim();
+        }
+        throw new YundocException(YundocErrorCode.VALIDATION_FAILED);
+    }
+
+    private String normalized(String value) {
+        if (!hasText(value)) {
+            return null;
+        }
+        return value.trim();
+    }
+
+    private boolean sameText(String first, String second) {
+        if (first == null) {
+            return second == null;
+        }
+        return first.equals(second);
     }
 }

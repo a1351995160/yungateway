@@ -79,6 +79,9 @@ public class WpsAuthorizationHttpClient implements WpsAuthorizationClient {
         if (!hasText(response.getData().getAccessToken())) {
             throw upstreamError(null);
         }
+        if (!hasText(response.getData().getExpireAt())) {
+            throw upstreamError(null);
+        }
         return response.getData();
     }
 
