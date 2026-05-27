@@ -1,4 +1,4 @@
-package com.wps.yundoc.auth.infrastructure;
+package com.wps.yundoc.capability.apppreview.api;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -6,16 +6,11 @@ import com.wps.yundoc.businesssystem.api.BusinessSystemApiPermissionUpdateReques
 import com.wps.yundoc.businesssystem.api.BusinessSystemCreateRequest;
 import com.wps.yundoc.businesssystem.api.BusinessSystemCreateResponse;
 import com.wps.yundoc.businesssystem.application.BusinessSystemAdminService;
-import com.wps.yundoc.common.api.ApiResponse;
-import com.wps.yundoc.common.context.RequestContext;
-import com.wps.yundoc.common.context.RequestContextHolder;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -23,8 +18,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -33,7 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
-class JwtAuthenticationFilterTest {
+class AppPreviewControllerTest {
 
     @LocalServerPort
     private int port;
@@ -48,33 +41,46 @@ class JwtAuthenticationFilterTest {
     private BusinessSystemAdminService adminService;
 
     @Test
-    void buildsRequestContextBeforeCapabilityController() throws IOException {
-        BusinessSystemCreateResponse created = createBusinessSystem("biz-filter-ok");
-        adminService.savePermissions("biz-filter-ok", permissions("user-files:list"));
+    void createsAppPreviewWhenBusinessSystemHasPermission() throws IOException {
+        BusinessSystemCreateResponse created = createBusinessSystem("biz-app-preview-ok");
+        adminService.savePermissions("biz-app-preview-ok", permissions("app-preview:create"));
         String token = accessToken(created);
 
         ResponseEntity<String> response = restTemplate.exchange(
-                url("/api/v1/user/files"),
-                HttpMethod.GET,
-                authorized(token),
+                url("/api/v1/app/previews"),
+                HttpMethod.POST,
+                authorized(token, previewJson("wps-file-001")),
                 String.class);
 
-        JsonNode body = objectMapper.readTree(response.getBody());
+        JsonNode data = objectMapper.readTree(response.getBody()).path("data");
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(body.path("data").path("businessSystemId").asText()).isEqualTo("biz-filter-ok");
-        assertThat(body.path("data").path("apiCode").asText()).isEqualTo("user-files:list");
+        assertThat(data.path("previewUrl").asText()).contains("wps-file-001");
+        assertThat(data.path("expireAt").asText()).isNotBlank();
     }
 
     @Test
-    void rejectsCapabilityRequestWithoutPermission() {
-        BusinessSystemCreateResponse created = createBusinessSystem("biz-filter-denied");
-        adminService.savePermissions("biz-filter-denied", permissions("app-preview:create"));
-        String token = accessToken(created);
+    void rejectsInvalidPreviewRequestBody() {
+        BusinessSystemCreateResponse created = createBusinessSystem("biz-app-preview-invalid");
+        adminService.savePermissions("biz-app-preview-invalid", permissions("app-preview:create"));
 
         ResponseEntity<String> response = restTemplate.exchange(
-                url("/api/v1/user/files"),
-                HttpMethod.GET,
-                authorized(token),
+                url("/api/v1/app/previews"),
+                HttpMethod.POST,
+                authorized(accessToken(created), "{\"source\":{\"type\":\"WPS_FILE\"}}"),
+                String.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    void rejectsAppPreviewWithoutPermission() {
+        BusinessSystemCreateResponse created = createBusinessSystem("biz-app-preview-denied");
+        adminService.savePermissions("biz-app-preview-denied", permissions("user-files:list"));
+
+        ResponseEntity<String> response = restTemplate.exchange(
+                url("/api/v1/app/previews"),
+                HttpMethod.POST,
+                authorized(accessToken(created), previewJson("wps-file-002")),
                 String.class);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
@@ -113,62 +119,28 @@ class JwtAuthenticationFilterTest {
         return request;
     }
 
-    private HttpEntity<String> authorized(String token) {
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
+    private String previewJson(String fileId) {
+        return "{\"source\":{\"type\":\"WPS_FILE\",\"fileId\":\"" + fileId
+                + "\"},\"options\":{\"expireSeconds\":3600},\"userId\":\"ignored\"}";
+    }
+
+    private HttpEntity<String> authorized(String token, String body) {
+        HttpHeaders headers = jsonHeaders();
         headers.setBearerAuth(token);
-        return new HttpEntity<>("{}", headers);
+        return new HttpEntity<>(body, headers);
     }
 
     private HttpEntity<String> jsonEntity(String body) {
+        return new HttpEntity<>(body, jsonHeaders());
+    }
+
+    private HttpHeaders jsonHeaders() {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        return new HttpEntity<>(body, headers);
+        return headers;
     }
 
     private String url(String path) {
         return "http://localhost:" + port + path;
-    }
-
-    @TestConfiguration
-    static class CapabilityTestConfiguration {
-
-        @Bean
-        CapabilityTestController capabilityTestController() {
-            return new CapabilityTestController();
-        }
-    }
-
-    @RestController
-    static class CapabilityTestController {
-
-        @GetMapping("/api/v1/user/files")
-        public ApiResponse<CapabilityContextResponse> preview() {
-            RequestContext context = RequestContextHolder.current()
-                    .orElseThrow(() -> new IllegalStateException("request context is required"));
-            CapabilityContextResponse response = new CapabilityContextResponse(
-                    context.getBusinessSystemId(),
-                    context.getApiCode());
-            return ApiResponse.success(response, context.getRequestId());
-        }
-    }
-
-    static class CapabilityContextResponse {
-
-        private final String businessSystemId;
-        private final String apiCode;
-
-        CapabilityContextResponse(String businessSystemId, String apiCode) {
-            this.businessSystemId = businessSystemId;
-            this.apiCode = apiCode;
-        }
-
-        public String getBusinessSystemId() {
-            return businessSystemId;
-        }
-
-        public String getApiCode() {
-            return apiCode;
-        }
     }
 }

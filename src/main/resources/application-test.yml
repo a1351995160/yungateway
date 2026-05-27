@@ -26,3 +26,14 @@ yundoc:
     audience: yundoc-business-systems-test
     secret: test-business-jwt-secret-with-enough-length
     ttl: 30m
+  wps-client:
+    base-url: https://wps.test
+    preview-path: /api/preview-links
+    token-path: /oauth/token
+    app-id: test-wps-app-id
+    app-secret: test-wps-app-secret
+    connect-timeout: 1s
+    read-timeout: 1s
+    max-retries: 1
+  wps-credential:
+    refresh-skew: 5m
