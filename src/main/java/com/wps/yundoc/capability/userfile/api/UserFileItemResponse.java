@@ -2,20 +2,13 @@ package com.wps.yundoc.capability.userfile.api;
 
 import com.wps.yundoc.wpsclient.application.WpsFileItem;
 
-public class UserFileItemResponse {
+public class UserFileItemResponse extends UserFileResponse {
 
     private final WpsFileItem item;
 
     public UserFileItemResponse(WpsFileItem item) {
+        super(item.getFileId(), item.getName());
         this.item = item;
-    }
-
-    public String getFileId() {
-        return item.getFileId();
-    }
-
-    public String getName() {
-        return item.getName();
     }
 
     public String getType() {

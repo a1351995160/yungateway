@@ -3,6 +3,7 @@ package com.wps.yundoc.credential.application;
 import com.wps.yundoc.common.error.YundocErrorCode;
 import com.wps.yundoc.common.error.YundocException;
 import com.wps.yundoc.credential.domain.OAuthState;
+import com.wps.yundoc.credential.domain.WpsOAuthCallbackResult;
 import com.wps.yundoc.credential.domain.WpsUserToken;
 import com.wps.yundoc.credential.infrastructure.LocalOAuthStateCache;
 import com.wps.yundoc.credential.infrastructure.LocalWpsUserTokenCache;
@@ -38,12 +39,17 @@ public class WpsUserAuthorizationService {
         return tokenCache.get(userId).orElseThrow(() -> reauthRequired(userId, businessSystemId));
     }
 
-    public void handleCallback(String code, String stateValue) {
+    public WpsOAuthCallbackResult handleCallback(String code, String stateValue) {
+        return completeAuthorization(code, stateValue);
+    }
+
+    public WpsOAuthCallbackResult completeAuthorization(String code, String stateValue) {
         String validCode = requiredText(code);
         String validState = requiredText(stateValue);
         OAuthState state = validState(validState);
         WpsUserToken token = authorizationClient.exchangeCode(validCode);
         tokenCache.put(state.getUserId(), token);
+        return new WpsOAuthCallbackResult(state.getUserId());
     }
 
     private String requiredText(String value) {

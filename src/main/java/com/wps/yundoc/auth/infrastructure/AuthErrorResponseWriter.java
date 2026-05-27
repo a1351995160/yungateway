@@ -34,7 +34,8 @@ public class AuthErrorResponseWriter {
         ErrorResponse error = ErrorResponse.of(
                 exception.getErrorCode().name(),
                 exception.getMessage(),
-                exception.getUpstreamCategory());
+                exception.getUpstreamCategory(),
+                exception.getDetails());
         return ApiResponse.failure(error, requestId());
     }
 
