@@ -4,37 +4,29 @@ import com.wps.yundoc.wpsclient.application.WpsFileItem;
 
 public class UserFileItemResponse {
 
-    private final String fileId;
-    private final String name;
-    private final String type;
-    private final boolean folder;
-    private final String updatedAt;
+    private final WpsFileItem item;
 
     public UserFileItemResponse(WpsFileItem item) {
-        this.fileId = item.getFileId();
-        this.name = item.getName();
-        this.type = item.getType();
-        this.folder = item.isFolder();
-        this.updatedAt = item.getUpdatedAt();
+        this.item = item;
     }
 
     public String getFileId() {
-        return fileId;
+        return item.getFileId();
     }
 
     public String getName() {
-        return name;
+        return item.getName();
     }
 
     public String getType() {
-        return type;
+        return item.getType();
     }
 
     public boolean isFolder() {
-        return folder;
+        return item.isFolder();
     }
 
     public String getUpdatedAt() {
-        return updatedAt;
+        return item.getUpdatedAt();
     }
 }
