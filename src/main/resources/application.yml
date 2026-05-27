@@ -25,3 +25,6 @@ management:
 yundoc:
   readiness:
     tdsql-required: true
+  wps-client:
+    preview-path: /api/preview-links
+    token-path: /oauth/token
