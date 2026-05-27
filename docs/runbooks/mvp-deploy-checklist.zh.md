@@ -10,8 +10,9 @@
 ## 生产配置
 
 - `yundoc.admin-auth.username` 已设置。
-- `yundoc.admin-auth.password-digest` 已使用生产管理员密码摘要。
-- `yundoc.admin-auth.password-salt` 已使用生产盐值。
+- `yundoc.admin-auth.login-digest` 已使用生产管理员密码摘要。
+- `yundoc.admin-auth.login-salt` 已使用生产盐值。
+- `yundoc.admin-auth.login-algorithm` 已匹配摘要生成算法。
 - `yundoc.admin-auth.jwt-secret` 已使用长度充足的生产密钥。
 - `yundoc.client-secret.pepper` 已从环境变量、配置中心或密钥系统注入。
 - `yundoc.jwt.issuer` 与 `yundoc.jwt.audience` 已匹配生产调用方约定。

@@ -49,8 +49,9 @@
 ## 关键配置
 
 - `yundoc.admin-auth.username`
-- `yundoc.admin-auth.password-digest`
-- `yundoc.admin-auth.password-salt`
+- `yundoc.admin-auth.login-digest`
+- `yundoc.admin-auth.login-salt`
+- `yundoc.admin-auth.login-algorithm`
 - `yundoc.admin-auth.jwt-secret`
 - `yundoc.client-secret.pepper`
 - `yundoc.jwt.issuer`
