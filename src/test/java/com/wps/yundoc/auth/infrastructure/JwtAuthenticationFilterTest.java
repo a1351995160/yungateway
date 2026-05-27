@@ -16,6 +16,7 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -26,8 +27,10 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.util.Collections;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -54,7 +57,7 @@ class JwtAuthenticationFilterTest {
         String token = accessToken(created);
 
         ResponseEntity<String> response = restTemplate.exchange(
-                url("/api/v1/user/files"),
+                url("/api/v1/test/capability"),
                 HttpMethod.GET,
                 authorized(token),
                 String.class);
@@ -72,7 +75,7 @@ class JwtAuthenticationFilterTest {
         String token = accessToken(created);
 
         ResponseEntity<String> response = restTemplate.exchange(
-                url("/api/v1/user/files"),
+                url("/api/v1/test/capability"),
                 HttpMethod.GET,
                 authorized(token),
                 String.class);
@@ -137,12 +140,18 @@ class JwtAuthenticationFilterTest {
         CapabilityTestController capabilityTestController() {
             return new CapabilityTestController();
         }
+
+        @Bean
+        @Primary
+        CapabilityRoutePolicy testCapabilityRoutePolicy() {
+            return new TestCapabilityRoutePolicy();
+        }
     }
 
     @RestController
     static class CapabilityTestController {
 
-        @GetMapping("/api/v1/user/files")
+        @GetMapping("/api/v1/test/capability")
         public ApiResponse<CapabilityContextResponse> preview() {
             RequestContext context = RequestContextHolder.current()
                     .orElseThrow(() -> new IllegalStateException("request context is required"));
@@ -150,6 +159,17 @@ class JwtAuthenticationFilterTest {
                     context.getBusinessSystemId(),
                     context.getApiCode());
             return ApiResponse.success(response, context.getRequestId());
+        }
+    }
+
+    static class TestCapabilityRoutePolicy extends CapabilityRoutePolicy {
+
+        @Override
+        public Optional<String> resolve(HttpServletRequest request) {
+            if ("/api/v1/test/capability".equals(request.getRequestURI())) {
+                return Optional.of("user-files:list");
+            }
+            return Optional.empty();
         }
     }
 

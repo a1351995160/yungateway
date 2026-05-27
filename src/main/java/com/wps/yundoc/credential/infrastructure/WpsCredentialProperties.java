@@ -8,6 +8,7 @@ import java.time.Duration;
 public class WpsCredentialProperties {
 
     private Duration refreshSkew = Duration.ofMinutes(5);
+    private int maxUserTokenCount = 10000;
 
     public Duration getRefreshSkew() {
         return refreshSkew;
@@ -15,5 +16,13 @@ public class WpsCredentialProperties {
 
     public void setRefreshSkew(Duration refreshSkew) {
         this.refreshSkew = refreshSkew;
+    }
+
+    public int getMaxUserTokenCount() {
+        return maxUserTokenCount;
+    }
+
+    public void setMaxUserTokenCount(int maxUserTokenCount) {
+        this.maxUserTokenCount = maxUserTokenCount;
     }
 }
