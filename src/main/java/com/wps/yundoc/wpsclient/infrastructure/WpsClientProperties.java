@@ -8,8 +8,8 @@ import java.time.Duration;
 public class WpsClientProperties {
 
     private String baseUrl = "";
-    private String previewPath = "/api/preview-links";
-    private String tokenPath = "/oauth/token";
+    private String previewPath = "";
+    private String tokenPath = "";
     private String appId = "";
     private String appSecret = "";
     private Duration connectTimeout = Duration.ofSeconds(2);

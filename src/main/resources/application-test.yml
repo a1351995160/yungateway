@@ -13,9 +13,9 @@ management:
 yundoc:
   admin-auth:
     username: admin
-    password-digest: e5cc16751bf7202ac04ec29635ca6ff74832220ac2162f15b20218337bba24b7
-    password-salt: admin-salt
-    password-algorithm: HMAC-SHA256
+    credential-digest: e5cc16751bf7202ac04ec29635ca6ff74832220ac2162f15b20218337bba24b7
+    credential-salt: admin-salt
+    credential-algorithm: HMAC-SHA256
     jwt-secret: test-admin-jwt-secret-with-enough-length
     jwt-ttl-seconds: 1800
   client-secret:

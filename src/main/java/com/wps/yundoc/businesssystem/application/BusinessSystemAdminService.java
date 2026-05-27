@@ -62,6 +62,10 @@ public class BusinessSystemAdminService {
         return assembler.toResponse(bizSystem, permissions);
     }
 
+    public BusinessSystemResponse getPermissions(String businessSystemId) {
+        return get(businessSystemId);
+    }
+
     @Transactional
     public BusinessSystemResponse savePermissions(
             String businessSystemId,

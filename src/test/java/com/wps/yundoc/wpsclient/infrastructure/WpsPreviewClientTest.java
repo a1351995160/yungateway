@@ -101,6 +101,8 @@ class WpsPreviewClientTest {
     private WpsClientProperties properties() {
         WpsClientProperties properties = new WpsClientProperties();
         properties.setBaseUrl("https://wps.test");
+        properties.setPreviewPath("/api/preview-links");
+        properties.setTokenPath("/oauth/token");
         properties.setConnectTimeout(Duration.ofSeconds(1));
         properties.setReadTimeout(Duration.ofSeconds(1));
         properties.setMaxRetries(1);

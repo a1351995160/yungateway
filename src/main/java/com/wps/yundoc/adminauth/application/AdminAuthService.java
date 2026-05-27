@@ -42,9 +42,9 @@ public class AdminAuthService {
     private void validatePassword(String password) {
         boolean matched = digestService.matches(
                 password,
-                properties.getPasswordSalt(),
-                properties.getPasswordAlgorithm(),
-                properties.getPasswordDigest());
+                properties.getCredentialSalt(),
+                properties.getCredentialAlgorithm(),
+                properties.getCredentialDigest());
         if (!matched) {
             throw new YundocException(YundocErrorCode.TOKEN_INVALID);
         }
