@@ -49,27 +49,27 @@ public class WpsAuthorizationHttpClient implements WpsAuthorizationClient {
     @Override
     public WpsUserToken exchangeCode(String code) {
         try {
-            WpsUserTokenResponse response = exchange(code);
+            WpsAppTokenResponse response = exchange(code);
             return toUserToken(response);
         } catch (RestClientException ex) {
             throw upstreamError(ex);
         }
     }
 
-    private WpsUserTokenResponse exchange(String code) {
+    private WpsAppTokenResponse exchange(String code) {
         return restTemplate.exchange(
                 userTokenUrl(),
                 HttpMethod.POST,
                 entity(code),
-                WpsUserTokenResponse.class).getBody();
+                WpsAppTokenResponse.class).getBody();
     }
 
-    private WpsUserToken toUserToken(WpsUserTokenResponse response) {
+    private WpsUserToken toUserToken(WpsAppTokenResponse response) {
         AppTokenData data = requireData(response);
         return new WpsUserToken(data.getAccessToken(), parseExpireAt(data.getExpireAt()));
     }
 
-    private AppTokenData requireData(WpsUserTokenResponse response) {
+    private AppTokenData requireData(WpsAppTokenResponse response) {
         if (!hasSuccessEnvelope(response)) {
             throw upstreamError(null);
         }
