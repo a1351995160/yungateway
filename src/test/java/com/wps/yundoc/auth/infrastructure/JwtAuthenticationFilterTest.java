@@ -16,6 +16,7 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -26,8 +27,10 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.util.Collections;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -54,7 +57,7 @@ class JwtAuthenticationFilterTest {
         String token = accessToken(created);
 
         ResponseEntity<String> response = restTemplate.exchange(
-                url("/api/v1/app/previews"),
+                url("/api/v1/test/capability"),
                 HttpMethod.POST,
                 authorized(token),
                 String.class);
@@ -72,7 +75,7 @@ class JwtAuthenticationFilterTest {
         String token = accessToken(created);
 
         ResponseEntity<String> response = restTemplate.exchange(
-                url("/api/v1/app/previews"),
+                url("/api/v1/test/capability"),
                 HttpMethod.POST,
                 authorized(token),
                 String.class);
@@ -137,12 +140,31 @@ class JwtAuthenticationFilterTest {
         CapabilityTestController capabilityTestController() {
             return new CapabilityTestController();
         }
+
+        @Bean
+        @Primary
+        CapabilityRoutePolicy testCapabilityRoutePolicy() {
+            return new CapabilityRoutePolicy() {
+                @Override
+                public Optional<String> resolve(HttpServletRequest request) {
+                    if (isTestCapabilityRoute(request)) {
+                        return Optional.of("app-preview:create");
+                    }
+                    return super.resolve(request);
+                }
+
+                private boolean isTestCapabilityRoute(HttpServletRequest request) {
+                    return "POST".equals(request.getMethod())
+                            && "/api/v1/test/capability".equals(request.getServletPath());
+                }
+            };
+        }
     }
 
     @RestController
     static class CapabilityTestController {
 
-        @PostMapping("/api/v1/app/previews")
+        @PostMapping("/api/v1/test/capability")
         public ApiResponse<CapabilityContextResponse> preview() {
             RequestContext context = RequestContextHolder.current()
                     .orElseThrow(() -> new IllegalStateException("request context is required"));
