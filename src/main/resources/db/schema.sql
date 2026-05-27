@@ -1,4 +1,4 @@
-CREATE TABLE biz_system (
+CREATE TABLE IF NOT EXISTS biz_system (
     business_system_id VARCHAR(64) NOT NULL COMMENT 'business system stable id',
     business_system_name VARCHAR(128) NOT NULL COMMENT 'business system display name',
     client_id VARCHAR(64) NOT NULL COMMENT 'issued client id',
@@ -16,7 +16,7 @@ CREATE TABLE biz_system (
     UNIQUE KEY uk_biz_system_client (client_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='business system access configuration';
 
-CREATE TABLE biz_system_api_permission (
+CREATE TABLE IF NOT EXISTS biz_system_api_permission (
     business_system_id VARCHAR(64) NOT NULL COMMENT 'business system stable id',
     api_code VARCHAR(64) NOT NULL COMMENT 'gateway api permission code',
     status VARCHAR(16) NOT NULL COMMENT 'ENABLED or DISABLED',

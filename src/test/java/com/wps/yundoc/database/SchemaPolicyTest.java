@@ -21,12 +21,12 @@ class SchemaPolicyTest {
             "(?im)^\\s*(?:unique\\s+)?(?:key|index)\\s+[`\\w]+\\s*\\(([^)]*)\\)");
 
     @Test
-    void migrationsDoNotUseAutoIncrementOrLargeFields() throws IOException {
-        List<Path> migrations = migrationFiles();
+    void schemaDoesNotUseAutoIncrementOrLargeFields() throws IOException {
+        List<Path> schemaFiles = schemaFiles();
 
-        assertThat(migrations).isNotEmpty();
-        for (Path migration : migrations) {
-            String sql = readSql(migration);
+        assertThat(schemaFiles).isNotEmpty();
+        for (Path schemaFile : schemaFiles) {
+            String sql = readSql(schemaFile);
             assertThat(sql).doesNotContain("auto_increment");
             assertThat(sql).doesNotContain(" text");
             assertThat(sql).doesNotContain(" blob");
@@ -40,55 +40,56 @@ class SchemaPolicyTest {
     }
 
     @Test
-    void migrationIndexesUseAtMostFiveColumns() throws IOException {
-        List<Path> migrations = migrationFiles();
+    void schemaIndexesUseAtMostFiveColumns() throws IOException {
+        List<Path> schemaFiles = schemaFiles();
 
-        for (Path migration : migrations) {
-            Matcher matcher = INDEX_DEFINITION.matcher(readSql(migration));
+        for (Path schemaFile : schemaFiles) {
+            Matcher matcher = INDEX_DEFINITION.matcher(readSql(schemaFile));
             while (matcher.find()) {
                 int columns = matcher.group(1).split(",").length;
                 assertThat(columns)
-                        .as("index column count in %s", migration)
+                        .as("index column count in %s", schemaFile)
                         .isLessThanOrEqualTo(5);
             }
         }
     }
 
     @Test
-    void bizSystemMigrationContainsOnlyMvpTables() throws IOException {
-        String sql = migrationFiles().stream()
+    void bizSystemSchemaContainsOnlyMvpTables() throws IOException {
+        String sql = schemaFiles().stream()
                 .map(SchemaPolicyTest::readSqlUnchecked)
                 .collect(Collectors.joining("\n"));
 
         assertThat(sql).contains(
-                "create table biz_system",
-                "create table biz_system_api_permission",
+                "create table if not exists biz_system",
+                "create table if not exists biz_system_api_permission",
                 "primary key (business_system_id)",
                 "unique key uk_biz_system_client (client_id)",
                 "primary key (business_system_id, api_code)");
     }
 
-    private static List<Path> migrationFiles() throws IOException {
-        Path migrationDir = Paths.get("src", "main", "resources", "db", "migration");
-        if (!Files.exists(migrationDir)) {
+    private static List<Path> schemaFiles() throws IOException {
+        Path schemaDir = Paths.get("src", "main", "resources", "db");
+        if (!Files.exists(schemaDir)) {
             return java.util.Collections.emptyList();
         }
-        try (java.util.stream.Stream<Path> paths = Files.list(migrationDir)) {
+        try (java.util.stream.Stream<Path> paths = Files.list(schemaDir)) {
             return paths
+                    .filter(path -> path.getFileName().toString().startsWith("schema"))
                     .filter(path -> path.getFileName().toString().endsWith(".sql"))
                     .collect(Collectors.toList());
         }
     }
 
-    private static String readSql(Path migration) throws IOException {
-        return new String(Files.readAllBytes(migration), StandardCharsets.UTF_8).toLowerCase(Locale.ROOT);
+    private static String readSql(Path schemaFile) throws IOException {
+        return new String(Files.readAllBytes(schemaFile), StandardCharsets.UTF_8).toLowerCase(Locale.ROOT);
     }
 
-    private static String readSqlUnchecked(Path migration) {
+    private static String readSqlUnchecked(Path schemaFile) {
         try {
-            return readSql(migration);
+            return readSql(schemaFile);
         } catch (IOException ex) {
-            throw new IllegalStateException("Failed to read migration " + migration, ex);
+            throw new IllegalStateException("Failed to read schema " + schemaFile, ex);
         }
     }
 }

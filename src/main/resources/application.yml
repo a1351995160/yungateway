@@ -1,9 +1,6 @@
 spring:
   application:
     name: wps-yundoc-capability-gateway
-  flyway:
-    enabled: true
-    locations: classpath:db/migration
 
 mybatis:
   mapper-locations: classpath*:mapper/**/*.xml

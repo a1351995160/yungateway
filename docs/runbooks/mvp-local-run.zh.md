@@ -24,7 +24,7 @@
 .\mvnw.cmd spring-boot:run -Dspring-boot.run.profiles=local
 ```
 
-`local` profile 使用 H2 数据库。启动前需要提供管理端和业务 JWT 相关配置；生产值不得写入仓库。测试 profile 中的示例值只用于自动化测试。
+`local` profile 使用本机 MySQL 数据库，默认连接 `127.0.0.1:3306/yundoc_local`。`test` profile 也使用本机 MySQL，默认连接 `127.0.0.1:3306/yundoc_test`，并在测试启动时执行 `src/main/resources/db/schema-clean.sql` 与 `src/main/resources/db/schema.sql` 重建测试表。可通过 `LOCAL_MYSQL_HOST`、`LOCAL_MYSQL_PORT`、`LOCAL_MYSQL_DATABASE`、`LOCAL_MYSQL_TEST_DATABASE`、`LOCAL_MYSQL_USERNAME`、`LOCAL_MYSQL_PASSWORD` 覆盖连接信息。首次启动 local 前请先在目标库执行 `src/main/resources/db/schema.sql`。启动前需要提供管理端和业务 JWT 相关配置；生产值不得写入仓库。测试 profile 中的示例值只用于自动化测试。
 
 ## Mock WPS 模式
 
