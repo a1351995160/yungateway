@@ -43,10 +43,11 @@ class WpsPreviewClientTest {
         RestTemplate restTemplate = new RestTemplate();
         MockRestServiceServer server = MockRestServiceServer.bindTo(restTemplate).build();
         WpsHttpClient client = new WpsHttpClient(noRetryProperties(), new RestTemplateBuilder(), restTemplate);
+        WpsPreviewRequest previewRequest = request();
         server.expect(once(), requestTo("https://wps.test/api/preview-links"))
                 .andRespond(withServerError());
 
-        assertThatThrownBy(() -> client.createPreview(request()))
+        assertThatThrownBy(() -> client.createPreview(previewRequest))
                 .isInstanceOf(YundocException.class)
                 .hasFieldOrPropertyWithValue("errorCode", YundocErrorCode.WPS_UPSTREAM_ERROR);
     }
@@ -56,11 +57,12 @@ class WpsPreviewClientTest {
         RestTemplate restTemplate = new RestTemplate();
         MockRestServiceServer server = MockRestServiceServer.bindTo(restTemplate).build();
         WpsHttpClient client = new WpsHttpClient(noRetryProperties(), new RestTemplateBuilder(), restTemplate);
+        WpsPreviewRequest previewRequest = request();
         String body = "{\"code\":0,\"data\":{\"previewUrl\":\"https://preview\",\"expireAt\":\"bad-date\"}}";
         server.expect(once(), requestTo("https://wps.test/api/preview-links"))
                 .andRespond(withSuccess(body, MediaType.APPLICATION_JSON));
 
-        assertThatThrownBy(() -> client.createPreview(request()))
+        assertThatThrownBy(() -> client.createPreview(previewRequest))
                 .isInstanceOf(YundocException.class)
                 .hasFieldOrPropertyWithValue("errorCode", YundocErrorCode.WPS_UPSTREAM_ERROR);
     }
