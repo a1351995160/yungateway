@@ -9,6 +9,9 @@ public class WpsClientProperties {
 
     private String baseUrl = "";
     private String previewPath = "/api/preview-links";
+    private String tokenPath = "/oauth/token";
+    private String appId = "";
+    private String appSecret = "";
     private Duration connectTimeout = Duration.ofSeconds(2);
     private Duration readTimeout = Duration.ofSeconds(5);
     private int maxRetries = 1;
@@ -27,6 +30,30 @@ public class WpsClientProperties {
 
     public void setPreviewPath(String previewPath) {
         this.previewPath = previewPath;
+    }
+
+    public String getTokenPath() {
+        return tokenPath;
+    }
+
+    public void setTokenPath(String tokenPath) {
+        this.tokenPath = tokenPath;
+    }
+
+    public String getAppId() {
+        return appId;
+    }
+
+    public void setAppId(String appId) {
+        this.appId = appId;
+    }
+
+    public String getAppSecret() {
+        return appSecret;
+    }
+
+    public void setAppSecret(String appSecret) {
+        this.appSecret = appSecret;
     }
 
     public Duration getConnectTimeout() {

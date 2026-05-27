@@ -42,13 +42,56 @@ class WpsPreviewClientTest {
     void mapsWpsFailureToStableErrorCode() {
         RestTemplate restTemplate = new RestTemplate();
         MockRestServiceServer server = MockRestServiceServer.bindTo(restTemplate).build();
-        WpsHttpClient client = new WpsHttpClient(properties(), new RestTemplateBuilder(), restTemplate);
+        WpsHttpClient client = new WpsHttpClient(noRetryProperties(), new RestTemplateBuilder(), restTemplate);
         server.expect(once(), requestTo("https://wps.test/api/preview-links"))
                 .andRespond(withServerError());
 
         assertThatThrownBy(() -> client.createPreview(request()))
                 .isInstanceOf(YundocException.class)
                 .hasFieldOrPropertyWithValue("errorCode", YundocErrorCode.WPS_UPSTREAM_ERROR);
+    }
+
+    @Test
+    void mapsInvalidSuccessPayloadToStableErrorCode() {
+        RestTemplate restTemplate = new RestTemplate();
+        MockRestServiceServer server = MockRestServiceServer.bindTo(restTemplate).build();
+        WpsHttpClient client = new WpsHttpClient(noRetryProperties(), new RestTemplateBuilder(), restTemplate);
+        String body = "{\"code\":0,\"data\":{\"previewUrl\":\"https://preview\",\"expireAt\":\"bad-date\"}}";
+        server.expect(once(), requestTo("https://wps.test/api/preview-links"))
+                .andRespond(withSuccess(body, MediaType.APPLICATION_JSON));
+
+        assertThatThrownBy(() -> client.createPreview(request()))
+                .isInstanceOf(YundocException.class)
+                .hasFieldOrPropertyWithValue("errorCode", YundocErrorCode.WPS_UPSTREAM_ERROR);
+    }
+
+    @Test
+    void retriesTransientServerErrorWhenCreatingPreview() {
+        RestTemplate restTemplate = new RestTemplate();
+        MockRestServiceServer server = MockRestServiceServer.bindTo(restTemplate).build();
+        WpsHttpClient client = new WpsHttpClient(properties(), new RestTemplateBuilder(), restTemplate);
+        String body = "{\"code\":0,\"data\":{\"previewUrl\":\"https://preview\",\"expireAt\":\"2026-05-26T18:00:00+08:00\"}}";
+        server.expect(once(), requestTo("https://wps.test/api/preview-links"))
+                .andRespond(withServerError());
+        server.expect(once(), requestTo("https://wps.test/api/preview-links"))
+                .andRespond(withSuccess(body, MediaType.APPLICATION_JSON));
+
+        WpsPreviewLink link = client.createPreview(request());
+
+        assertThat(link.getPreviewUrl()).isEqualTo("https://preview");
+        server.verify();
+    }
+
+    @Test
+    void fetchesAppTokenFromWps() {
+        RestTemplate restTemplate = new RestTemplate();
+        MockRestServiceServer server = MockRestServiceServer.bindTo(restTemplate).build();
+        WpsHttpClient client = new WpsHttpClient(properties(), new RestTemplateBuilder(), restTemplate);
+        String body = "{\"code\":0,\"data\":{\"accessToken\":\"app-token\",\"expireAt\":\"2026-05-26T18:00:00+08:00\"}}";
+        server.expect(once(), requestTo("https://wps.test/oauth/token"))
+                .andRespond(withSuccess(body, MediaType.APPLICATION_JSON));
+
+        assertThat(client.issueAppToken().getAccessToken()).isEqualTo("app-token");
     }
 
     private WpsPreviewRequest request() {
@@ -61,6 +104,12 @@ class WpsPreviewClientTest {
         properties.setConnectTimeout(Duration.ofSeconds(1));
         properties.setReadTimeout(Duration.ofSeconds(1));
         properties.setMaxRetries(1);
+        return properties;
+    }
+
+    private WpsClientProperties noRetryProperties() {
+        WpsClientProperties properties = properties();
+        properties.setMaxRetries(0);
         return properties;
     }
 }

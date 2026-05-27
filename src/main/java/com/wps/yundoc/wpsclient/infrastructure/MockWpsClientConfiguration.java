@@ -1,5 +1,7 @@
 package com.wps.yundoc.wpsclient.infrastructure;
 
+import com.wps.yundoc.wpsclient.application.WpsAppToken;
+import com.wps.yundoc.wpsclient.application.WpsAppTokenClient;
 import com.wps.yundoc.wpsclient.application.WpsPreviewClient;
 import com.wps.yundoc.wpsclient.application.WpsPreviewLink;
 import com.wps.yundoc.wpsclient.application.WpsPreviewRequest;
@@ -18,8 +20,17 @@ public class MockWpsClientConfiguration {
         return this::previewLink;
     }
 
+    @Bean
+    public WpsAppTokenClient mockWpsAppTokenClient() {
+        return this::appToken;
+    }
+
     private WpsPreviewLink previewLink(WpsPreviewRequest request) {
         OffsetDateTime expireAt = OffsetDateTime.now().plusSeconds(request.getExpireSeconds());
         return new WpsPreviewLink("https://preview.test/files/" + request.getFileId(), expireAt);
+    }
+
+    private WpsAppToken appToken() {
+        return new WpsAppToken("test-wps-app-token", OffsetDateTime.now().plusMinutes(30));
     }
 }

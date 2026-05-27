@@ -1,6 +1,7 @@
 package com.wps.yundoc.wpsclient.infrastructure;
 
 import com.wps.yundoc.wpsclient.application.WpsPreviewClient;
+import com.wps.yundoc.wpsclient.application.WpsAppTokenClient;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -11,9 +12,21 @@ public class WpsClientConfiguration {
 
     @Bean
     @Profile("!local & !test")
-    public WpsPreviewClient wpsPreviewClient(
+    public WpsHttpClient wpsHttpClient(
             WpsClientProperties properties,
             RestTemplateBuilder restTemplateBuilder) {
         return new WpsHttpClient(properties, restTemplateBuilder);
+    }
+
+    @Bean
+    @Profile("!local & !test")
+    public WpsPreviewClient wpsPreviewClient(WpsHttpClient wpsHttpClient) {
+        return wpsHttpClient;
+    }
+
+    @Bean
+    @Profile("!local & !test")
+    public WpsAppTokenClient wpsAppTokenClient(WpsHttpClient wpsHttpClient) {
+        return wpsHttpClient;
     }
 }
