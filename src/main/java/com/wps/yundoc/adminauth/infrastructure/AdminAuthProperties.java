@@ -19,15 +19,15 @@ public class AdminAuthProperties {
 
     @NotBlank
     @Pattern(regexp = "^[a-fA-F0-9]{64}$")
-    private String credentialDigest;
+    private String loginDigest;
 
     @NotBlank
     @Size(max = 64)
-    private String credentialSalt;
+    private String loginSalt;
 
     @NotBlank
     @Size(max = 32)
-    private String credentialAlgorithm = "HMAC-SHA256";
+    private String loginAlgorithm = "HMAC-SHA256";
 
     @NotBlank
     @Size(min = 32, max = 256)
@@ -45,28 +45,28 @@ public class AdminAuthProperties {
         this.username = username;
     }
 
-    public String getCredentialDigest() {
-        return credentialDigest;
+    public String getLoginDigest() {
+        return loginDigest;
     }
 
-    public void setCredentialDigest(String credentialDigest) {
-        this.credentialDigest = credentialDigest;
+    public void setLoginDigest(String loginDigest) {
+        this.loginDigest = loginDigest;
     }
 
-    public String getCredentialSalt() {
-        return credentialSalt;
+    public String getLoginSalt() {
+        return loginSalt;
     }
 
-    public void setCredentialSalt(String credentialSalt) {
-        this.credentialSalt = credentialSalt;
+    public void setLoginSalt(String loginSalt) {
+        this.loginSalt = loginSalt;
     }
 
-    public String getCredentialAlgorithm() {
-        return credentialAlgorithm;
+    public String getLoginAlgorithm() {
+        return loginAlgorithm;
     }
 
-    public void setCredentialAlgorithm(String credentialAlgorithm) {
-        this.credentialAlgorithm = credentialAlgorithm;
+    public void setLoginAlgorithm(String loginAlgorithm) {
+        this.loginAlgorithm = loginAlgorithm;
     }
 
     public String getJwtSecret() {

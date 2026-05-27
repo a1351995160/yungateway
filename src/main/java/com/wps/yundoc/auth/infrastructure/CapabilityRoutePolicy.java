@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Component
+@SuppressWarnings("java:S1075")
 public class CapabilityRoutePolicy {
 
     private static final String USER_FILE_PATH = "/api/v1/user/files/";
