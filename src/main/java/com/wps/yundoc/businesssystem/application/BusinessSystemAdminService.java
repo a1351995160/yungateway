@@ -6,6 +6,8 @@ import com.wps.yundoc.auth.application.SecretGenerator;
 import com.wps.yundoc.businesssystem.api.BusinessSystemApiPermissionUpdateRequest;
 import com.wps.yundoc.businesssystem.api.BusinessSystemCreateRequest;
 import com.wps.yundoc.businesssystem.api.BusinessSystemCreateResponse;
+import com.wps.yundoc.businesssystem.api.BusinessSystemListRequest;
+import com.wps.yundoc.businesssystem.api.BusinessSystemListResponse;
 import com.wps.yundoc.businesssystem.api.BusinessSystemResponse;
 import com.wps.yundoc.businesssystem.api.BusinessSystemSecretResponse;
 import com.wps.yundoc.businesssystem.domain.ApiPermissionDefinition;
@@ -20,8 +22,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class BusinessSystemAdminService {
@@ -60,6 +64,17 @@ public class BusinessSystemAdminService {
         BizSystemPO bizSystem = requireBizSystem(businessSystemId);
         List<BizSystemApiPermissionPO> permissions = permissionMapper.selectByBusinessSystemId(businessSystemId);
         return assembler.toResponse(bizSystem, permissions);
+    }
+
+    public BusinessSystemListResponse list(BusinessSystemListRequest request) {
+        List<BizSystemPO> fetched = bizSystemMapper.selectPage(
+                normalize(request.getKeyword()),
+                normalize(request.getStatus()),
+                request.getPageSize() + 1,
+                request.offset());
+        boolean hasMore = fetched.size() > request.getPageSize();
+        List<BizSystemPO> pageItems = pageItems(fetched, request.getPageSize());
+        return new BusinessSystemListResponse(toResponses(pageItems), hasMore);
     }
 
     public BusinessSystemResponse getPermissions(String businessSystemId) {
@@ -188,5 +203,25 @@ public class BusinessSystemAdminService {
                 digest.getSalt(),
                 digest.getAlgorithm(),
                 LocalDateTime.now());
+    }
+
+    private String normalize(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            return null;
+        }
+        return value.trim();
+    }
+
+    private List<BizSystemPO> pageItems(List<BizSystemPO> fetched, int pageSize) {
+        if (fetched.size() <= pageSize) {
+            return new ArrayList<>(fetched);
+        }
+        return new ArrayList<>(fetched.subList(0, pageSize));
+    }
+
+    private List<BusinessSystemResponse> toResponses(List<BizSystemPO> bizSystems) {
+        return bizSystems.stream()
+                .map(bizSystem -> assembler.toResponse(bizSystem, Collections.emptyList()))
+                .collect(Collectors.toList());
     }
 }

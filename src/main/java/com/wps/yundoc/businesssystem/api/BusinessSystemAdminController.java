@@ -2,6 +2,7 @@ package com.wps.yundoc.businesssystem.api;
 
 import com.wps.yundoc.businesssystem.application.BusinessSystemAdminService;
 import com.wps.yundoc.common.api.ApiResponse;
+import com.wps.yundoc.common.api.Pagination;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -28,6 +29,13 @@ public class BusinessSystemAdminController {
     public ApiResponse<BusinessSystemCreateResponse> create(@Valid @RequestBody BusinessSystemCreateRequest request) {
         BusinessSystemCreateResponse response = businessSystemAdminService.create(request);
         return ApiResponse.success(response, REQUEST_ID_UNKNOWN);
+    }
+
+    @GetMapping
+    public ApiResponse<BusinessSystemListResponse> list(@Valid BusinessSystemListRequest request) {
+        BusinessSystemListResponse response = businessSystemAdminService.list(request);
+        Pagination pagination = Pagination.cursor(null, request.getPageSize(), response.isHasMore());
+        return ApiResponse.success(response, REQUEST_ID_UNKNOWN, pagination);
     }
 
     @GetMapping("/{businessSystemId}")
