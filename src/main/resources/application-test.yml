@@ -17,6 +17,9 @@ management:
       show-details: always
 
 yundoc:
+  admin-console:
+    allowed-origins:
+      - http://localhost:5173
   admin-auth:
     username: admin
     login-digest: e5cc16751bf7202ac04ec29635ca6ff74832220ac2162f15b20218337bba24b7

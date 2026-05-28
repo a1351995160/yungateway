@@ -12,6 +12,20 @@ public interface BizSystemMapper {
 
     BizSystemPO selectByClientId(@Param("clientId") String clientId);
 
+    java.util.List<BizSystemPO> selectPage(
+            @Param("keyword") String keyword,
+            @Param("status") String status,
+            @Param("limit") int limit,
+            @Param("offset") int offset);
+
+    int updateProfile(
+            @Param("businessSystemId") String businessSystemId,
+            @Param("businessSystemName") String businessSystemName,
+            @Param("status") String status,
+            @Param("jwtTtlSeconds") Integer jwtTtlSeconds,
+            @Param("description") String description,
+            @Param("updatedAt") java.time.LocalDateTime updatedAt);
+
     int updateSecret(
             @Param("businessSystemId") String businessSystemId,
             @Param("clientSecretDigest") String clientSecretDigest,

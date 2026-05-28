@@ -4,7 +4,10 @@ import com.wps.yundoc.auth.application.ClientSecretDigestService;
 import com.wps.yundoc.businesssystem.api.BusinessSystemApiPermissionUpdateRequest;
 import com.wps.yundoc.businesssystem.api.BusinessSystemCreateRequest;
 import com.wps.yundoc.businesssystem.api.BusinessSystemCreateResponse;
+import com.wps.yundoc.businesssystem.api.BusinessSystemListRequest;
+import com.wps.yundoc.businesssystem.api.BusinessSystemListResponse;
 import com.wps.yundoc.businesssystem.api.BusinessSystemSecretResponse;
+import com.wps.yundoc.businesssystem.api.BusinessSystemUpdateRequest;
 import com.wps.yundoc.businesssystem.infrastructure.BizSystemMapper;
 import com.wps.yundoc.businesssystem.infrastructure.BizSystemPO;
 import org.junit.jupiter.api.Test;
@@ -56,6 +59,39 @@ class BusinessSystemAdminServiceTest {
         assertThat(after.getPermissionVersion()).isEqualTo(before.getPermissionVersion() + 1);
     }
 
+    @Test
+    void listsBusinessSystemsByKeyword() {
+        adminService.create(createRequest("biz-service-list-hit"));
+        adminService.create(createRequest("biz-service-list-miss"));
+
+        BusinessSystemListRequest request = new BusinessSystemListRequest();
+        request.setKeyword("list-hit");
+        request.setPage(1);
+        request.setPageSize(20);
+
+        BusinessSystemListResponse response = adminService.list(request);
+
+        assertThat(response.getItems()).extracting("businessSystemId")
+                .containsExactly("biz-service-list-hit");
+        assertThat(response.isHasMore()).isFalse();
+    }
+
+    @Test
+    void updatesBusinessSystemProfileWithoutChangingVersions() {
+        adminService.create(createRequest("biz-service-update"));
+        BizSystemPO before = bizSystemMapper.selectByBusinessSystemId("biz-service-update");
+
+        adminService.update("biz-service-update", updateRequest());
+
+        BizSystemPO after = bizSystemMapper.selectByBusinessSystemId("biz-service-update");
+        assertThat(after.getBusinessSystemName()).isEqualTo("Updated System");
+        assertThat(after.getStatus()).isEqualTo("DISABLED");
+        assertThat(after.getJwtTtlSeconds()).isEqualTo(3600);
+        assertThat(after.getDescription()).isEqualTo("updated");
+        assertThat(after.getTokenVersion()).isEqualTo(before.getTokenVersion());
+        assertThat(after.getPermissionVersion()).isEqualTo(before.getPermissionVersion());
+    }
+
     private boolean matches(String secret, BizSystemPO bizSystem) {
         return digestService.matches(
                 secret,
@@ -75,6 +111,15 @@ class BusinessSystemAdminServiceTest {
     private BusinessSystemApiPermissionUpdateRequest permissionRequest(String apiCode) {
         BusinessSystemApiPermissionUpdateRequest request = new BusinessSystemApiPermissionUpdateRequest();
         request.setApiPermissions(Collections.singletonList(apiCode));
+        return request;
+    }
+
+    private BusinessSystemUpdateRequest updateRequest() {
+        BusinessSystemUpdateRequest request = new BusinessSystemUpdateRequest();
+        request.setBusinessSystemName("Updated System");
+        request.setStatus("DISABLED");
+        request.setJwtTtlSeconds(3600);
+        request.setDescription("updated");
         return request;
     }
 }
