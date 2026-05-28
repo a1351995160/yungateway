@@ -6,6 +6,9 @@ spring:
     password: ${LOCAL_MYSQL_PASSWORD:}
 
 yundoc:
+  admin-console:
+    allowed-origins:
+      - http://localhost:5173
   admin-auth:
     username: admin
     login-digest: 88995e497842f7ccb22ae8ec9caf0598a344697babfbd1c739d20b26aa23db3b
