@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wps.yundoc.adminuser.infrastructure.AdminUserMapper">
+
+    <resultMap id="AdminUserResultMap" type="com.wps.yundoc.adminuser.infrastructure.AdminUserPO">
+        <id property="username" column="username"/>
+        <result property="displayName" column="display_name"/>
+        <result property="role" column="role"/>
+        <result property="status" column="status"/>
+        <result property="loginDigest" column="login_digest"/>
+        <result property="loginSalt" column="login_salt"/>
+        <result property="loginAlgorithm" column="login_algorithm"/>
+        <result property="lastLoginAt" column="last_login_at"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <sql id="AdminUserColumns">
+        username,
+        display_name,
+        role,
+        status,
+        login_digest,
+        login_salt,
+        login_algorithm,
+        last_login_at,
+        created_at,
+        updated_at
+    </sql>
+
+    <insert id="insert" parameterType="com.wps.yundoc.adminuser.infrastructure.AdminUserPO">
+        INSERT INTO admin_user (
+            username,
+            display_name,
+            role,
+            status,
+            login_digest,
+            login_salt,
+            login_algorithm,
+            last_login_at,
+            created_at,
+            updated_at
+        ) VALUES (
+            #{username},
+            #{displayName},
+            #{role},
+            #{status},
+            #{loginDigest},
+            #{loginSalt},
+            #{loginAlgorithm},
+            #{lastLoginAt},
+            #{createdAt},
+            #{updatedAt}
+        )
+    </insert>
+
+    <select id="selectByUsername" resultMap="AdminUserResultMap">
+        SELECT
+        <include refid="AdminUserColumns"/>
+        FROM admin_user
+        WHERE username = #{username}
+    </select>
+
+    <select id="selectPage" resultMap="AdminUserResultMap">
+        SELECT
+        <include refid="AdminUserColumns"/>
+        FROM admin_user
+        <where>
+            <if test="keyword != null">
+                AND (
+                    username LIKE CONCAT('%', #{keyword}, '%')
+                    OR display_name LIKE CONCAT('%', #{keyword}, '%')
+                )
+            </if>
+            <if test="status != null">
+                AND status = #{status}
+            </if>
+            <if test="role != null">
+                AND role = #{role}
+            </if>
+        </where>
+        ORDER BY created_at DESC, username DESC
+        LIMIT #{limit}
+        OFFSET #{offset}
+    </select>
+
+    <update id="updateProfile">
+        UPDATE admin_user
+        SET display_name = #{displayName},
+            role = #{role},
+            status = #{status},
+            updated_at = #{updatedAt}
+        WHERE username = #{username}
+    </update>
+
+    <update id="updateLastLoginAt">
+        UPDATE admin_user
+        SET last_login_at = #{lastLoginAt},
+            updated_at = #{lastLoginAt}
+        WHERE username = #{username}
+    </update>
+</mapper>

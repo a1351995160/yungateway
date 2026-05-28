@@ -1,6 +1,7 @@
 package com.wps.yundoc.adminauth.infrastructure;
 
 import com.wps.yundoc.adminauth.application.AdminAuthService;
+import com.wps.yundoc.adminauth.application.AdminPrincipal;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
@@ -20,7 +21,8 @@ public class AdminAuthInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
-        adminAuthService.requireAdmin(request.getHeader(AUTHORIZATION_HEADER));
+        AdminPrincipal principal = adminAuthService.requireAdmin(request.getHeader(AUTHORIZATION_HEADER));
+        request.setAttribute(AdminPrincipal.REQUEST_ATTRIBUTE, principal);
         return true;
     }
 }
