@@ -4,6 +4,8 @@ import com.wps.yundoc.auth.application.ClientSecretDigestService;
 import com.wps.yundoc.businesssystem.api.BusinessSystemApiPermissionUpdateRequest;
 import com.wps.yundoc.businesssystem.api.BusinessSystemCreateRequest;
 import com.wps.yundoc.businesssystem.api.BusinessSystemCreateResponse;
+import com.wps.yundoc.businesssystem.api.BusinessSystemListRequest;
+import com.wps.yundoc.businesssystem.api.BusinessSystemListResponse;
 import com.wps.yundoc.businesssystem.api.BusinessSystemSecretResponse;
 import com.wps.yundoc.businesssystem.infrastructure.BizSystemMapper;
 import com.wps.yundoc.businesssystem.infrastructure.BizSystemPO;
@@ -54,6 +56,23 @@ class BusinessSystemAdminServiceTest {
         BizSystemPO after = bizSystemMapper.selectByBusinessSystemId("biz-permission");
 
         assertThat(after.getPermissionVersion()).isEqualTo(before.getPermissionVersion() + 1);
+    }
+
+    @Test
+    void listsBusinessSystemsByKeyword() {
+        adminService.create(createRequest("biz-service-list-hit"));
+        adminService.create(createRequest("biz-service-list-miss"));
+
+        BusinessSystemListRequest request = new BusinessSystemListRequest();
+        request.setKeyword("list-hit");
+        request.setPage(1);
+        request.setPageSize(20);
+
+        BusinessSystemListResponse response = adminService.list(request);
+
+        assertThat(response.getItems()).extracting("businessSystemId")
+                .containsExactly("biz-service-list-hit");
+        assertThat(response.isHasMore()).isFalse();
     }
 
     private boolean matches(String secret, BizSystemPO bizSystem) {

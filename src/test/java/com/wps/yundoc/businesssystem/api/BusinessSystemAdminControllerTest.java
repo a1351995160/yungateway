@@ -22,6 +22,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.io.IOException;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -71,6 +72,52 @@ class BusinessSystemAdminControllerTest {
         ResponseEntity<String> duplicate = createBusinessSystem("biz-admin-duplicate");
 
         assertThat(duplicate.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    void listsBusinessSystemsWithoutSecrets() throws IOException {
+        createBusinessSystem("biz-admin-list-a");
+        createBusinessSystem("biz-admin-list-b");
+
+        ResponseEntity<String> response = restTemplate.exchange(
+                url("/api/v1/admin/business-systems?page=1&pageSize=20"),
+                HttpMethod.GET,
+                authorized(null),
+                String.class);
+
+        JsonNode body = objectMapper.readTree(response.getBody());
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(body.path("data").path("items")).isNotEmpty();
+        assertThat(response.getBody()).contains("biz-admin-list-a");
+        assertThat(response.getBody()).doesNotContain("clientSecret");
+        assertThat(response.getBody()).doesNotContain("clientSecretDigest");
+        assertThat(response.getBody()).doesNotContain("clientSecretSalt");
+        assertThat(body.path("pagination").path("pageSize").asInt()).isEqualTo(20);
+    }
+
+    @Test
+    void filtersBusinessSystemListByKeyword() throws IOException {
+        createBusinessSystem("biz-admin-keyword-hit");
+        createBusinessSystem("biz-admin-keyword-miss");
+
+        ResponseEntity<String> response = restTemplate.exchange(
+                url("/api/v1/admin/business-systems?keyword=keyword-hit&page=1&pageSize=20"),
+                HttpMethod.GET,
+                authorized(null),
+                String.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).contains("biz-admin-keyword-hit");
+        assertThat(response.getBody()).doesNotContain("biz-admin-keyword-miss");
+    }
+
+    @Test
+    void rejectsInvalidBusinessSystemListPage() throws Exception {
+        mockMvc.perform(get("/api/v1/admin/business-systems")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminJwt())
+                        .param("page", "0")
+                        .param("pageSize", "20"))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
