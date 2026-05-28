@@ -9,10 +9,12 @@ import com.wps.yundoc.businesssystem.api.BusinessSystemCreateResponse;
 import com.wps.yundoc.businesssystem.api.BusinessSystemResponse;
 import com.wps.yundoc.businesssystem.application.BusinessSystemAdminService;
 import com.wps.yundoc.auth.infrastructure.JwtAuthenticationFilter;
+import com.wps.yundoc.common.config.AdminConsoleSecurityProperties;
 import com.wps.yundoc.common.error.YundocErrorCode;
 import com.wps.yundoc.common.error.YundocException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -45,6 +47,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         AdminAuthInterceptor.class,
         AdminAuthWebMvcConfiguration.class
 })
+@EnableConfigurationProperties(AdminConsoleSecurityProperties.class)
 class AdminAuthWebMvcConfigurationTest {
 
     @Autowired
