@@ -103,6 +103,16 @@
         OFFSET #{offset}
     </select>
 
+    <update id="updateProfile">
+        UPDATE biz_system
+        SET business_system_name = #{businessSystemName},
+            status = #{status},
+            jwt_ttl_seconds = #{jwtTtlSeconds},
+            description = #{description},
+            updated_at = #{updatedAt}
+        WHERE business_system_id = #{businessSystemId}
+    </update>
+
     <update id="updateSecret">
         UPDATE biz_system
         SET client_secret_digest = #{clientSecretDigest},

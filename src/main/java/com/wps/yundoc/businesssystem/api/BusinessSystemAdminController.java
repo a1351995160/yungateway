@@ -4,6 +4,7 @@ import com.wps.yundoc.businesssystem.application.BusinessSystemAdminService;
 import com.wps.yundoc.common.api.ApiResponse;
 import com.wps.yundoc.common.api.Pagination;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -41,6 +42,14 @@ public class BusinessSystemAdminController {
     @GetMapping("/{businessSystemId}")
     public ApiResponse<BusinessSystemResponse> get(@PathVariable String businessSystemId) {
         BusinessSystemResponse response = businessSystemAdminService.get(businessSystemId);
+        return ApiResponse.success(response, REQUEST_ID_UNKNOWN);
+    }
+
+    @PatchMapping("/{businessSystemId}")
+    public ApiResponse<BusinessSystemResponse> update(
+            @PathVariable String businessSystemId,
+            @Valid @RequestBody BusinessSystemUpdateRequest request) {
+        BusinessSystemResponse response = businessSystemAdminService.update(businessSystemId, request);
         return ApiResponse.success(response, REQUEST_ID_UNKNOWN);
     }
 

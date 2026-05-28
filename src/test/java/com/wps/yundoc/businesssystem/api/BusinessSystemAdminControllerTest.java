@@ -16,6 +16,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -117,16 +118,21 @@ class BusinessSystemAdminControllerTest {
         createBusinessSystem("biz-admin-update");
         BizSystemPO before = bizSystemMapper.selectByBusinessSystemId("biz-admin-update");
 
-        ResponseEntity<String> response = restTemplate.exchange(
-                url("/api/v1/admin/business-systems/biz-admin-update"),
-                HttpMethod.PATCH,
-                authorized("{\"businessSystemName\":\"Updated System\",\"status\":\"DISABLED\","
-                        + "\"jwtTtlSeconds\":3600,\"description\":\"updated\"}"),
-                String.class);
+        MvcResult result;
+        try {
+            result = mockMvc.perform(patch("/api/v1/admin/business-systems/biz-admin-update")
+                            .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminJwt())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"businessSystemName\":\"Updated System\",\"status\":\"DISABLED\","
+                                    + "\"jwtTtlSeconds\":3600,\"description\":\"updated\"}"))
+                    .andExpect(status().isOk())
+                    .andReturn();
+        } catch (Exception ex) {
+            throw new AssertionError("business system update request should succeed", ex);
+        }
 
-        JsonNode body = objectMapper.readTree(response.getBody());
+        JsonNode body = objectMapper.readTree(result.getResponse().getContentAsString());
         BizSystemPO after = bizSystemMapper.selectByBusinessSystemId("biz-admin-update");
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(body.path("data").path("businessSystemName").asText()).isEqualTo("Updated System");
         assertThat(body.path("data").path("status").asText()).isEqualTo("DISABLED");
         assertThat(body.path("data").path("jwtTtlSeconds").asInt()).isEqualTo(3600);

@@ -10,6 +10,7 @@ import com.wps.yundoc.businesssystem.api.BusinessSystemListRequest;
 import com.wps.yundoc.businesssystem.api.BusinessSystemListResponse;
 import com.wps.yundoc.businesssystem.api.BusinessSystemResponse;
 import com.wps.yundoc.businesssystem.api.BusinessSystemSecretResponse;
+import com.wps.yundoc.businesssystem.api.BusinessSystemUpdateRequest;
 import com.wps.yundoc.businesssystem.domain.ApiPermissionDefinition;
 import com.wps.yundoc.businesssystem.infrastructure.BizSystemApiPermissionMapper;
 import com.wps.yundoc.businesssystem.infrastructure.BizSystemApiPermissionPO;
@@ -78,6 +79,19 @@ public class BusinessSystemAdminService {
     }
 
     public BusinessSystemResponse getPermissions(String businessSystemId) {
+        return get(businessSystemId);
+    }
+
+    @Transactional
+    public BusinessSystemResponse update(String businessSystemId, BusinessSystemUpdateRequest request) {
+        requireBizSystem(businessSystemId);
+        bizSystemMapper.updateProfile(
+                businessSystemId,
+                request.getBusinessSystemName(),
+                request.getStatus(),
+                request.getJwtTtlSeconds(),
+                request.getDescription(),
+                LocalDateTime.now());
         return get(businessSystemId);
     }
 
