@@ -23,6 +23,7 @@ import java.io.IOException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -109,6 +110,41 @@ class BusinessSystemAdminControllerTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).contains("biz-admin-keyword-hit");
         assertThat(response.getBody()).doesNotContain("biz-admin-keyword-miss");
+    }
+
+    @Test
+    void updatesBusinessSystemProfileWithoutChangingVersions() throws IOException {
+        createBusinessSystem("biz-admin-update");
+        BizSystemPO before = bizSystemMapper.selectByBusinessSystemId("biz-admin-update");
+
+        ResponseEntity<String> response = restTemplate.exchange(
+                url("/api/v1/admin/business-systems/biz-admin-update"),
+                HttpMethod.PATCH,
+                authorized("{\"businessSystemName\":\"Updated System\",\"status\":\"DISABLED\","
+                        + "\"jwtTtlSeconds\":3600,\"description\":\"updated\"}"),
+                String.class);
+
+        JsonNode body = objectMapper.readTree(response.getBody());
+        BizSystemPO after = bizSystemMapper.selectByBusinessSystemId("biz-admin-update");
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(body.path("data").path("businessSystemName").asText()).isEqualTo("Updated System");
+        assertThat(body.path("data").path("status").asText()).isEqualTo("DISABLED");
+        assertThat(body.path("data").path("jwtTtlSeconds").asInt()).isEqualTo(3600);
+        assertThat(body.path("data").path("description").asText()).isEqualTo("updated");
+        assertThat(after.getTokenVersion()).isEqualTo(before.getTokenVersion());
+        assertThat(after.getPermissionVersion()).isEqualTo(before.getPermissionVersion());
+    }
+
+    @Test
+    void rejectsInvalidBusinessSystemUpdateStatus() throws Exception {
+        createBusinessSystem("biz-admin-invalid-update");
+
+        mockMvc.perform(patch("/api/v1/admin/business-systems/biz-admin-invalid-update")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminJwt())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"businessSystemName\":\"Updated System\",\"status\":\"DELETED\","
+                                + "\"jwtTtlSeconds\":3600}"))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
