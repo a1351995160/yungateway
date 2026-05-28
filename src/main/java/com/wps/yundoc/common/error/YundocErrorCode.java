@@ -3,6 +3,8 @@ package com.wps.yundoc.common.error;
 public enum YundocErrorCode {
     AUTH_REQUIRED(401, "Authentication is required"),
     TOKEN_INVALID(401, "Token is invalid"),
+    ADMIN_PERMISSION_DENIED(403, "Admin permission denied"),
+    ADMIN_USER_NOT_FOUND(404, "Admin user does not exist"),
     BUSINESS_SYSTEM_DISABLED(403, "Business system is disabled"),
     API_PERMISSION_DENIED(403, "API permission denied"),
     USER_ID_REQUIRED(400, "User id is required"),

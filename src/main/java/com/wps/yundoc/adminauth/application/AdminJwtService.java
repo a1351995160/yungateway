@@ -21,7 +21,7 @@ public class AdminJwtService {
 
     private static final String HEADER = "{\"alg\":\"HS256\",\"typ\":\"JWT\"}";
     private static final String JCA_HMAC_SHA256 = "HmacSHA256";
-    private static final String ROLE_ADMIN = "ADMIN";
+    private static final String TOKEN_TYPE = "admin-jwt";
 
     private final AdminAuthProperties properties;
     private final ObjectMapper objectMapper;
@@ -32,28 +32,32 @@ public class AdminJwtService {
     }
 
     public AdminJwt issue(String username) {
+        return issue(username, AdminRole.SUPER_ADMIN);
+    }
+
+    public AdminJwt issue(String username, AdminRole role) {
         long issuedAt = Instant.now().getEpochSecond();
         long expiresAt = issuedAt + properties.getJwtTtlSeconds();
-        String payload = encodeJson(payload(username, issuedAt, expiresAt));
+        String payload = encodeJson(payload(username, role, issuedAt, expiresAt));
         String signingInput = base64Url(HEADER) + "." + payload;
         return new AdminJwt(signingInput + "." + signature(signingInput), properties.getJwtTtlSeconds());
     }
 
-    public void validate(String authorizationHeader) {
+    public AdminPrincipal validate(String authorizationHeader) {
         String token = bearerToken(authorizationHeader);
         String[] parts = token.split("\\.");
         validateFormat(parts);
         validateSignature(parts);
-        validatePayload(parts[1]);
+        return validatePayload(parts[1]);
     }
 
-    private Map<String, Object> payload(String username, long issuedAt, long expiresAt) {
+    private Map<String, Object> payload(String username, AdminRole role, long issuedAt, long expiresAt) {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("sub", username);
-        payload.put("role", ROLE_ADMIN);
+        payload.put("role", role.name());
         payload.put("iat", issuedAt);
         payload.put("exp", expiresAt);
-        payload.put("typ", "admin-jwt");
+        payload.put("typ", TOKEN_TYPE);
         return payload;
     }
 
@@ -82,14 +86,28 @@ public class AdminJwtService {
         }
     }
 
-    private void validatePayload(String encodedPayload) {
+    private AdminPrincipal validatePayload(String encodedPayload) {
         JsonNode payload = readPayload(encodedPayload);
-        boolean adminToken = ROLE_ADMIN.equals(payload.path("role").asText());
+        boolean adminToken = TOKEN_TYPE.equals(payload.path("typ").asText());
         boolean unexpired = payload.path("exp").asLong() > Instant.now().getEpochSecond();
+        String username = payload.path("sub").asText();
+        AdminRole role = parseRole(payload.path("role").asText());
         if (!adminToken) {
             throw new YundocException(YundocErrorCode.TOKEN_INVALID);
         }
+        if (username == null || username.trim().isEmpty()) {
+            throw new YundocException(YundocErrorCode.TOKEN_INVALID);
+        }
         if (!unexpired) {
+            throw new YundocException(YundocErrorCode.TOKEN_INVALID);
+        }
+        return new AdminPrincipal(username, username, role, AdminStatus.ENABLED, null);
+    }
+
+    private AdminRole parseRole(String role) {
+        try {
+            return AdminRole.valueOf(role);
+        } catch (RuntimeException ex) {
             throw new YundocException(YundocErrorCode.TOKEN_INVALID);
         }
     }
