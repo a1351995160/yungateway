@@ -154,6 +154,27 @@ class BusinessSystemAdminControllerTest {
     }
 
     @Test
+    void rejectsBusinessSystemUpdateWithoutJwtTtl() throws Exception {
+        createBusinessSystem("biz-admin-update-missing-ttl");
+
+        mockMvc.perform(patch("/api/v1/admin/business-systems/biz-admin-update-missing-ttl")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminJwt())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"businessSystemName\":\"Updated System\",\"status\":\"ENABLED\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void rejectsCreateWithNullJwtTtl() throws Exception {
+        mockMvc.perform(post("/api/v1/admin/business-systems")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminJwt())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"businessSystemId\":\"biz-admin-null-ttl\","
+                                + "\"businessSystemName\":\"Contract System\",\"jwtTtlSeconds\":null}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void rejectsInvalidBusinessSystemListPage() throws Exception {
         mockMvc.perform(get("/api/v1/admin/business-systems")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminJwt())
