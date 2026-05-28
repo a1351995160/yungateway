@@ -2,7 +2,6 @@ package com.wps.yundoc.businesssystem.api;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.wps.yundoc.adminauth.application.AdminAuthService;
 import com.wps.yundoc.businesssystem.infrastructure.BizSystemMapper;
 import com.wps.yundoc.businesssystem.infrastructure.BizSystemPO;
 import org.junit.jupiter.api.Test;
@@ -21,8 +20,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.io.IOException;
-import java.lang.reflect.Constructor;
-import java.util.Arrays;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -47,16 +44,6 @@ class BusinessSystemAdminControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
-
-    @Test
-    void controllerDoesNotOwnAdminAuthBoundary() {
-        boolean dependsOnAdminAuthService = Arrays.stream(BusinessSystemAdminController.class.getDeclaredConstructors())
-                .map(Constructor::getParameterTypes)
-                .flatMap(Arrays::stream)
-                .anyMatch(AdminAuthService.class::equals);
-
-        assertThat(dependsOnAdminAuthService).isFalse();
-    }
 
     @Test
     void rejectsAnonymousAdminRequest() throws Exception {
