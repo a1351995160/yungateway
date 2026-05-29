@@ -8,14 +8,10 @@ import java.util.List;
 @Mapper
 public interface BizSystemApiPermissionMapper {
 
-    int insert(BizSystemApiPermissionPO permission);
-
     BizSystemApiPermissionPO selectByBusinessSystemIdAndApiCode(
             @Param("businessSystemId") String businessSystemId,
             @Param("apiCode") String apiCode);
 
     List<BizSystemApiPermissionPO> selectByBusinessSystemId(
             @Param("businessSystemId") String businessSystemId);
-
-    int deleteByBusinessSystemId(@Param("businessSystemId") String businessSystemId);
 }

@@ -2,13 +2,11 @@ package com.wps.yundoc.auth.infrastructure;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.wps.yundoc.businesssystem.api.BusinessSystemApiPermissionUpdateRequest;
-import com.wps.yundoc.businesssystem.api.BusinessSystemCreateRequest;
-import com.wps.yundoc.businesssystem.api.BusinessSystemCreateResponse;
-import com.wps.yundoc.businesssystem.application.BusinessSystemAdminService;
 import com.wps.yundoc.common.api.ApiResponse;
 import com.wps.yundoc.common.context.RequestContext;
 import com.wps.yundoc.common.context.RequestContextHolder;
+import com.wps.yundoc.testsupport.BusinessSystemCredentials;
+import com.wps.yundoc.testsupport.BusinessSystemFixture;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -29,7 +27,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
-import java.util.Collections;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -48,13 +45,13 @@ class JwtAuthenticationFilterTest {
     private TestRestTemplate restTemplate;
 
     @Autowired
-    private BusinessSystemAdminService adminService;
+    private BusinessSystemFixture businessSystemFixture;
 
     @Test
     void buildsRequestContextBeforeCapabilityController() throws IOException {
-        BusinessSystemCreateResponse created = createBusinessSystem("biz-filter-ok");
-        adminService.savePermissions("biz-filter-ok", permissions("user-files:list"));
-        String token = accessToken(created);
+        BusinessSystemCredentials credentials =
+                businessSystemFixture.enabled("biz-filter-ok", "user-files:list");
+        String token = accessToken(credentials);
 
         ResponseEntity<String> response = restTemplate.exchange(
                 url("/api/v1/test/capability"),
@@ -70,9 +67,9 @@ class JwtAuthenticationFilterTest {
 
     @Test
     void rejectsCapabilityRequestWithoutPermission() {
-        BusinessSystemCreateResponse created = createBusinessSystem("biz-filter-denied");
-        adminService.savePermissions("biz-filter-denied", permissions("app-preview:create"));
-        String token = accessToken(created);
+        BusinessSystemCredentials credentials =
+                businessSystemFixture.enabled("biz-filter-denied", "app-preview:create");
+        String token = accessToken(credentials);
 
         ResponseEntity<String> response = restTemplate.exchange(
                 url("/api/v1/test/capability"),
@@ -83,9 +80,9 @@ class JwtAuthenticationFilterTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
     }
 
-    private String accessToken(BusinessSystemCreateResponse created) {
-        String body = "{\"clientId\":\"" + created.getBusinessSystem().getClientId()
-                + "\",\"clientSecret\":\"" + created.getClientSecret() + "\"}";
+    private String accessToken(BusinessSystemCredentials credentials) {
+        String body = "{\"clientId\":\"" + credentials.getClientId()
+                + "\",\"clientSecret\":\"" + credentials.getClientSecret() + "\"}";
         ResponseEntity<String> response = restTemplate.postForEntity(
                 url("/api/v1/auth/token"),
                 jsonEntity(body),
@@ -100,20 +97,6 @@ class JwtAuthenticationFilterTest {
         } catch (IOException ex) {
             throw new AssertionError("token response must be json", ex);
         }
-    }
-
-    private BusinessSystemCreateResponse createBusinessSystem(String businessSystemId) {
-        BusinessSystemCreateRequest request = new BusinessSystemCreateRequest();
-        request.setBusinessSystemId(businessSystemId);
-        request.setBusinessSystemName("Contract System");
-        request.setJwtTtlSeconds(1800);
-        return adminService.create(request);
-    }
-
-    private BusinessSystemApiPermissionUpdateRequest permissions(String apiCode) {
-        BusinessSystemApiPermissionUpdateRequest request = new BusinessSystemApiPermissionUpdateRequest();
-        request.setApiPermissions(Collections.singletonList(apiCode));
-        return request;
     }
 
     private HttpEntity<String> authorized(String token) {

@@ -2,10 +2,8 @@ package com.wps.yundoc.capability.userfile.api;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.wps.yundoc.businesssystem.api.BusinessSystemApiPermissionUpdateRequest;
-import com.wps.yundoc.businesssystem.api.BusinessSystemCreateRequest;
-import com.wps.yundoc.businesssystem.api.BusinessSystemCreateResponse;
-import com.wps.yundoc.businesssystem.application.BusinessSystemAdminService;
+import com.wps.yundoc.testsupport.BusinessSystemCredentials;
+import com.wps.yundoc.testsupport.BusinessSystemFixture;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -24,7 +22,6 @@ import org.springframework.test.context.ActiveProfiles;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.Collections;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -43,7 +40,7 @@ class UserFileControllerTest {
     private TestRestTemplate restTemplate;
 
     @Autowired
-    private BusinessSystemAdminService adminService;
+    private BusinessSystemFixture businessSystemFixture;
 
     @Test
     void returnsReauthWhenUserTokenMissing() throws IOException {
@@ -116,14 +113,14 @@ class UserFileControllerTest {
     }
 
     private String userFileToken(String businessSystemId) {
-        BusinessSystemCreateResponse created = createBusinessSystem(businessSystemId);
-        adminService.savePermissions(businessSystemId, permissions());
-        return accessToken(created);
+        BusinessSystemCredentials credentials =
+                businessSystemFixture.enabled(businessSystemId, "user-files:list");
+        return accessToken(credentials);
     }
 
-    private String accessToken(BusinessSystemCreateResponse created) {
-        String body = "{\"clientId\":\"" + created.getBusinessSystem().getClientId()
-                + "\",\"clientSecret\":\"" + created.getClientSecret() + "\"}";
+    private String accessToken(BusinessSystemCredentials credentials) {
+        String body = "{\"clientId\":\"" + credentials.getClientId()
+                + "\",\"clientSecret\":\"" + credentials.getClientSecret() + "\"}";
         ResponseEntity<String> response = restTemplate.postForEntity(
                 url("/api/v1/auth/token"),
                 json(body),
@@ -137,20 +134,6 @@ class UserFileControllerTest {
         } catch (IOException ex) {
             throw new AssertionError("token response must be json", ex);
         }
-    }
-
-    private BusinessSystemCreateResponse createBusinessSystem(String businessSystemId) {
-        BusinessSystemCreateRequest request = new BusinessSystemCreateRequest();
-        request.setBusinessSystemId(businessSystemId);
-        request.setBusinessSystemName("User File System");
-        request.setJwtTtlSeconds(1800);
-        return adminService.create(request);
-    }
-
-    private BusinessSystemApiPermissionUpdateRequest permissions() {
-        BusinessSystemApiPermissionUpdateRequest request = new BusinessSystemApiPermissionUpdateRequest();
-        request.setApiPermissions(Collections.singletonList("user-files:list"));
-        return request;
     }
 
     private HttpEntity<String> authorized(String token) {

@@ -2,6 +2,8 @@ package com.wps.yundoc.mvp;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.wps.yundoc.testsupport.BusinessSystemCredentials;
+import com.wps.yundoc.testsupport.BusinessSystemFixture;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -34,12 +36,16 @@ class MvpSmokeTest {
     @Autowired
     private TestRestTemplate restTemplate;
 
+    @Autowired
+    private BusinessSystemFixture businessSystemFixture;
+
     @Test
     void completesMvpFlowWithMockWps() throws IOException {
-        String adminJwt = adminJwt();
-        JsonNode created = createBusinessSystem(adminJwt, "biz-mvp-smoke");
-        configurePermissions(adminJwt, "biz-mvp-smoke");
-        String accessToken = accessToken(created);
+        BusinessSystemCredentials credentials = businessSystemFixture.enabled(
+                "biz-mvp-smoke",
+                "app-preview:create",
+                "user-files:list");
+        String accessToken = accessToken(credentials);
 
         JsonNode preview = postAppPreview(accessToken);
         JsonNode reauth = getUserFiles(accessToken, HttpStatus.UNAUTHORIZED);
@@ -55,40 +61,11 @@ class MvpSmokeTest {
         assertThat(files.path("data").path("items").get(0).path("fileId").asText()).isNotBlank();
     }
 
-    private String adminJwt() throws IOException {
-        ResponseEntity<String> response = restTemplate.postForEntity(
-                url("/api/v1/admin/auth/login"),
-                jsonEntity("{\"username\":\"admin\",\"password\":\"admin-password\"}"),
-                String.class);
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        return body(response).path("data").path("adminJwt").asText();
-    }
-
-    private JsonNode createBusinessSystem(String adminJwt, String businessSystemId) throws IOException {
-        ResponseEntity<String> response = restTemplate.postForEntity(
-                url("/api/v1/admin/business-systems"),
-                authorized(adminJwt, "{\"businessSystemId\":\"" + businessSystemId
-                        + "\",\"businessSystemName\":\"MVP Smoke\",\"jwtTtlSeconds\":1800}"),
-                String.class);
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        return body(response);
-    }
-
-    private void configurePermissions(String adminJwt, String businessSystemId) {
-        ResponseEntity<String> response = restTemplate.exchange(
-                url("/api/v1/admin/business-systems/" + businessSystemId + "/api-permissions"),
-                HttpMethod.PUT,
-                authorized(adminJwt, "{\"apiPermissions\":[\"app-preview:create\",\"user-files:list\"]}"),
-                String.class);
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-    }
-
-    private String accessToken(JsonNode created) throws IOException {
-        String clientId = created.path("data").path("businessSystem").path("clientId").asText();
-        String clientSecret = created.path("data").path("clientSecret").asText();
+    private String accessToken(BusinessSystemCredentials credentials) throws IOException {
         ResponseEntity<String> response = restTemplate.postForEntity(
                 url("/api/v1/auth/token"),
-                jsonEntity("{\"clientId\":\"" + clientId + "\",\"clientSecret\":\"" + clientSecret + "\"}"),
+                jsonEntity("{\"clientId\":\"" + credentials.getClientId()
+                        + "\",\"clientSecret\":\"" + credentials.getClientSecret() + "\"}"),
                 String.class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         return body(response).path("data").path("accessToken").asText();
@@ -128,12 +105,6 @@ class MvpSmokeTest {
     private String previewJson(String fileId) {
         return "{\"source\":{\"type\":\"WPS_FILE\",\"fileId\":\"" + fileId
                 + "\"},\"options\":{\"expireSeconds\":3600}}";
-    }
-
-    private HttpEntity<String> authorized(String adminJwt, String body) {
-        HttpHeaders headers = jsonHeaders();
-        headers.setBearerAuth(adminJwt);
-        return new HttpEntity<>(body, headers);
     }
 
     private HttpEntity<String> bearer(String accessToken, String body) {

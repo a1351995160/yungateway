@@ -36,38 +36,6 @@
         updated_at
     </sql>
 
-    <insert id="insert" parameterType="com.wps.yundoc.businesssystem.infrastructure.BizSystemPO">
-        INSERT INTO biz_system (
-            business_system_id,
-            business_system_name,
-            client_id,
-            client_secret_digest,
-            client_secret_salt,
-            client_secret_alg,
-            status,
-            token_version,
-            permission_version,
-            jwt_ttl_seconds,
-            description,
-            created_at,
-            updated_at
-        ) VALUES (
-            #{businessSystemId},
-            #{businessSystemName},
-            #{clientId},
-            #{clientSecretDigest},
-            #{clientSecretSalt},
-            #{clientSecretAlg},
-            #{status},
-            #{tokenVersion},
-            #{permissionVersion},
-            #{jwtTtlSeconds},
-            #{description},
-            #{createdAt},
-            #{updatedAt}
-        )
-    </insert>
-
     <select id="selectByBusinessSystemId" resultMap="BizSystemResultMap">
         SELECT
         <include refid="BizSystemColumns"/>
@@ -81,52 +49,4 @@
         FROM biz_system
         WHERE client_id = #{clientId}
     </select>
-
-    <select id="selectPage" resultMap="BizSystemResultMap">
-        SELECT
-        <include refid="BizSystemColumns"/>
-        FROM biz_system
-        <where>
-            <if test="keyword != null">
-                AND (
-                    business_system_id LIKE CONCAT('%', #{keyword}, '%')
-                    OR business_system_name LIKE CONCAT('%', #{keyword}, '%')
-                    OR client_id LIKE CONCAT('%', #{keyword}, '%')
-                )
-            </if>
-            <if test="status != null">
-                AND status = #{status}
-            </if>
-        </where>
-        ORDER BY created_at DESC, business_system_id DESC
-        LIMIT #{limit}
-        OFFSET #{offset}
-    </select>
-
-    <update id="updateProfile">
-        UPDATE biz_system
-        SET business_system_name = #{businessSystemName},
-            status = #{status},
-            jwt_ttl_seconds = #{jwtTtlSeconds},
-            description = #{description},
-            updated_at = #{updatedAt}
-        WHERE business_system_id = #{businessSystemId}
-    </update>
-
-    <update id="updateSecret">
-        UPDATE biz_system
-        SET client_secret_digest = #{clientSecretDigest},
-            client_secret_salt = #{clientSecretSalt},
-            client_secret_alg = #{clientSecretAlg},
-            token_version = token_version + 1,
-            updated_at = #{updatedAt}
-        WHERE business_system_id = #{businessSystemId}
-    </update>
-
-    <update id="increasePermissionVersion">
-        UPDATE biz_system
-        SET permission_version = permission_version + 1,
-            updated_at = #{updatedAt}
-        WHERE business_system_id = #{businessSystemId}
-    </update>
 </mapper>

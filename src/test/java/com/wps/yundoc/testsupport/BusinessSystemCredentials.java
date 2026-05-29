@@ -1,21 +1,15 @@
-package com.wps.yundoc.businesssystem.api;
+package com.wps.yundoc.testsupport;
 
-public class BusinessSystemSecretResponse {
+public class BusinessSystemCredentials {
 
     private final String businessSystemId;
     private final String clientId;
     private final String clientSecret;
-    private final Integer tokenVersion;
 
-    public BusinessSystemSecretResponse(
-            String businessSystemId,
-            String clientId,
-            String clientSecret,
-            Integer tokenVersion) {
+    public BusinessSystemCredentials(String businessSystemId, String clientId, String clientSecret) {
         this.businessSystemId = businessSystemId;
         this.clientId = clientId;
         this.clientSecret = clientSecret;
-        this.tokenVersion = tokenVersion;
     }
 
     public String getBusinessSystemId() {
@@ -28,9 +22,5 @@ public class BusinessSystemSecretResponse {
 
     public String getClientSecret() {
         return clientSecret;
-    }
-
-    public Integer getTokenVersion() {
-        return tokenVersion;
     }
 }
