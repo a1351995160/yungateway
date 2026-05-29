@@ -21,22 +21,6 @@
         updated_at
     </sql>
 
-    <insert id="insert" parameterType="com.wps.yundoc.businesssystem.infrastructure.BizSystemApiPermissionPO">
-        INSERT INTO biz_system_api_permission (
-            business_system_id,
-            api_code,
-            status,
-            created_at,
-            updated_at
-        ) VALUES (
-            #{businessSystemId},
-            #{apiCode},
-            #{status},
-            #{createdAt},
-            #{updatedAt}
-        )
-    </insert>
-
     <select id="selectByBusinessSystemIdAndApiCode" resultMap="BizSystemApiPermissionResultMap">
         SELECT
         <include refid="BizSystemApiPermissionColumns"/>
@@ -52,9 +36,4 @@
         WHERE business_system_id = #{businessSystemId}
         ORDER BY api_code ASC
     </select>
-
-    <delete id="deleteByBusinessSystemId">
-        DELETE FROM biz_system_api_permission
-        WHERE business_system_id = #{businessSystemId}
-    </delete>
 </mapper>

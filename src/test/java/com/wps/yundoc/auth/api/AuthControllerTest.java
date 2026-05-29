@@ -2,10 +2,8 @@ package com.wps.yundoc.auth.api;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.wps.yundoc.businesssystem.api.BusinessSystemCreateRequest;
-import com.wps.yundoc.businesssystem.api.BusinessSystemCreateResponse;
-import com.wps.yundoc.businesssystem.api.BusinessSystemApiPermissionUpdateRequest;
-import com.wps.yundoc.businesssystem.application.BusinessSystemAdminService;
+import com.wps.yundoc.testsupport.BusinessSystemCredentials;
+import com.wps.yundoc.testsupport.BusinessSystemFixture;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -23,8 +21,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
-import java.util.Collections;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -44,17 +40,17 @@ class AuthControllerTest {
     private TestRestTemplate restTemplate;
 
     @Autowired
-    private BusinessSystemAdminService adminService;
+    private BusinessSystemFixture businessSystemFixture;
 
     @Autowired
     private MockMvc mockMvc;
 
     @Test
     void issuesBusinessJwtWithoutUserOrAuthModeClaims() throws IOException {
-        BusinessSystemCreateResponse created = createBusinessSystem("biz-token-ok");
-        adminService.savePermissions("biz-token-ok", permissions("user-files:list"));
+        BusinessSystemCredentials credentials =
+                businessSystemFixture.enabled("biz-token-ok", "user-files:list");
 
-        ResponseEntity<String> response = token(created.getBusinessSystem().getClientId(), created.getClientSecret());
+        ResponseEntity<String> response = token(credentials.getClientId(), credentials.getClientSecret());
 
         JsonNode body = objectMapper.readTree(response.getBody());
         String accessToken = body.path("data").path("accessToken").asText();
@@ -69,9 +65,9 @@ class AuthControllerTest {
 
     @Test
     void usesBusinessSystemJwtTtlWhenIssuingToken() throws IOException {
-        BusinessSystemCreateResponse created = createBusinessSystem("biz-token-ttl", 600);
+        BusinessSystemCredentials credentials = businessSystemFixture.enabled("biz-token-ttl", 600);
 
-        ResponseEntity<String> response = token(created.getBusinessSystem().getClientId(), created.getClientSecret());
+        ResponseEntity<String> response = token(credentials.getClientId(), credentials.getClientSecret());
 
         JsonNode data = objectMapper.readTree(response.getBody()).path("data");
         JsonNode payload = jwtPayload(data.path("accessToken").asText());
@@ -82,30 +78,12 @@ class AuthControllerTest {
 
     @Test
     void rejectsWrongClientSecret() throws Exception {
-        BusinessSystemCreateResponse created = createBusinessSystem("biz-token-wrong-secret");
+        BusinessSystemCredentials credentials = businessSystemFixture.enabled("biz-token-wrong-secret");
 
         mockMvc.perform(post("/api/v1/auth/token")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(tokenJson(created.getBusinessSystem().getClientId(), "wrong-secret")))
+                        .content(tokenJson(credentials.getClientId(), "wrong-secret")))
                 .andExpect(status().isUnauthorized());
-    }
-
-    private BusinessSystemCreateResponse createBusinessSystem(String businessSystemId) {
-        return createBusinessSystem(businessSystemId, 1800);
-    }
-
-    private BusinessSystemCreateResponse createBusinessSystem(String businessSystemId, Integer jwtTtlSeconds) {
-        BusinessSystemCreateRequest request = new BusinessSystemCreateRequest();
-        request.setBusinessSystemId(businessSystemId);
-        request.setBusinessSystemName("Contract System");
-        request.setJwtTtlSeconds(jwtTtlSeconds);
-        return adminService.create(request);
-    }
-
-    private BusinessSystemApiPermissionUpdateRequest permissions(String apiCode) {
-        BusinessSystemApiPermissionUpdateRequest request = new BusinessSystemApiPermissionUpdateRequest();
-        request.setApiPermissions(Collections.singletonList(apiCode));
-        return request;
     }
 
     private ResponseEntity<String> token(String clientId, String clientSecret) {

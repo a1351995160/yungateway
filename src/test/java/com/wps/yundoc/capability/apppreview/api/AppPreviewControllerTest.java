@@ -2,10 +2,8 @@ package com.wps.yundoc.capability.apppreview.api;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.wps.yundoc.businesssystem.api.BusinessSystemApiPermissionUpdateRequest;
-import com.wps.yundoc.businesssystem.api.BusinessSystemCreateRequest;
-import com.wps.yundoc.businesssystem.api.BusinessSystemCreateResponse;
-import com.wps.yundoc.businesssystem.application.BusinessSystemAdminService;
+import com.wps.yundoc.testsupport.BusinessSystemCredentials;
+import com.wps.yundoc.testsupport.BusinessSystemFixture;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -20,8 +18,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.io.IOException;
-import java.util.Collections;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -38,13 +34,13 @@ class AppPreviewControllerTest {
     private TestRestTemplate restTemplate;
 
     @Autowired
-    private BusinessSystemAdminService adminService;
+    private BusinessSystemFixture businessSystemFixture;
 
     @Test
     void createsAppPreviewWhenBusinessSystemHasPermission() throws IOException {
-        BusinessSystemCreateResponse created = createBusinessSystem("biz-app-preview-ok");
-        adminService.savePermissions("biz-app-preview-ok", permissions("app-preview:create"));
-        String token = accessToken(created);
+        BusinessSystemCredentials credentials =
+                businessSystemFixture.enabled("biz-app-preview-ok", "app-preview:create");
+        String token = accessToken(credentials);
 
         ResponseEntity<String> response = restTemplate.exchange(
                 url("/api/v1/app/previews"),
@@ -60,13 +56,13 @@ class AppPreviewControllerTest {
 
     @Test
     void rejectsInvalidPreviewRequestBody() {
-        BusinessSystemCreateResponse created = createBusinessSystem("biz-app-preview-invalid");
-        adminService.savePermissions("biz-app-preview-invalid", permissions("app-preview:create"));
+        BusinessSystemCredentials credentials =
+                businessSystemFixture.enabled("biz-app-preview-invalid", "app-preview:create");
 
         ResponseEntity<String> response = restTemplate.exchange(
                 url("/api/v1/app/previews"),
                 HttpMethod.POST,
-                authorized(accessToken(created), "{\"source\":{\"type\":\"WPS_FILE\"}}"),
+                authorized(accessToken(credentials), "{\"source\":{\"type\":\"WPS_FILE\"}}"),
                 String.class);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
@@ -74,21 +70,21 @@ class AppPreviewControllerTest {
 
     @Test
     void rejectsAppPreviewWithoutPermission() {
-        BusinessSystemCreateResponse created = createBusinessSystem("biz-app-preview-denied");
-        adminService.savePermissions("biz-app-preview-denied", permissions("user-files:list"));
+        BusinessSystemCredentials credentials =
+                businessSystemFixture.enabled("biz-app-preview-denied", "user-files:list");
 
         ResponseEntity<String> response = restTemplate.exchange(
                 url("/api/v1/app/previews"),
                 HttpMethod.POST,
-                authorized(accessToken(created), previewJson("wps-file-002")),
+                authorized(accessToken(credentials), previewJson("wps-file-002")),
                 String.class);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
     }
 
-    private String accessToken(BusinessSystemCreateResponse created) {
-        String body = "{\"clientId\":\"" + created.getBusinessSystem().getClientId()
-                + "\",\"clientSecret\":\"" + created.getClientSecret() + "\"}";
+    private String accessToken(BusinessSystemCredentials credentials) {
+        String body = "{\"clientId\":\"" + credentials.getClientId()
+                + "\",\"clientSecret\":\"" + credentials.getClientSecret() + "\"}";
         ResponseEntity<String> response = restTemplate.postForEntity(
                 url("/api/v1/auth/token"),
                 jsonEntity(body),
@@ -103,20 +99,6 @@ class AppPreviewControllerTest {
         } catch (IOException ex) {
             throw new AssertionError("token response must be json", ex);
         }
-    }
-
-    private BusinessSystemCreateResponse createBusinessSystem(String businessSystemId) {
-        BusinessSystemCreateRequest request = new BusinessSystemCreateRequest();
-        request.setBusinessSystemId(businessSystemId);
-        request.setBusinessSystemName("Contract System");
-        request.setJwtTtlSeconds(1800);
-        return adminService.create(request);
-    }
-
-    private BusinessSystemApiPermissionUpdateRequest permissions(String apiCode) {
-        BusinessSystemApiPermissionUpdateRequest request = new BusinessSystemApiPermissionUpdateRequest();
-        request.setApiPermissions(Collections.singletonList(apiCode));
-        return request;
     }
 
     private String previewJson(String fileId) {

@@ -3,19 +3,9 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://${LOCAL_MYSQL_HOST:127.0.0.1}:${LOCAL_MYSQL_PORT:3306}/${LOCAL_MYSQL_DATABASE:yundoc_local}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
     username: ${LOCAL_MYSQL_USERNAME:root}
-    password: ${LOCAL_MYSQL_PASSWORD:}
+    password: ${LOCAL_MYSQL_PASSWORD:123456}
 
 yundoc:
-  admin-console:
-    allowed-origins:
-      - http://localhost:5173
-  admin-auth:
-    username: admin
-    login-digest: 88995e497842f7ccb22ae8ec9caf0598a344697babfbd1c739d20b26aa23db3b
-    login-salt: admin-salt
-    login-algorithm: HMAC-SHA256
-    jwt-secret: ${YUNDOC_LOCAL_ADMIN_JWT_SECRET:local-admin-jwt-secret-with-enough-length}
-    jwt-ttl-seconds: 1800
   client-secret:
     pepper: ${YUNDOC_LOCAL_CLIENT_SECRET_PEPPER:local-client-secret-pepper}
     algorithm: HMAC-SHA256

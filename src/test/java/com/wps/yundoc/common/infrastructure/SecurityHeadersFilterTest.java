@@ -22,8 +22,8 @@ class SecurityHeadersFilterTest {
 
     @Test
     void addsBrowserSecurityHeaders() throws Exception {
-        mockMvc.perform(get("/api/v1/admin/api-permission-definitions"))
-                .andExpect(status().isUnauthorized())
+        mockMvc.perform(get("/actuator/health"))
+                .andExpect(status().isOk())
                 .andExpect(header().string("X-Content-Type-Options", "nosniff"))
                 .andExpect(header().string("Referrer-Policy", "no-referrer"))
                 .andExpect(header().exists("Content-Security-Policy"))

@@ -22,7 +22,6 @@ class ArchitectureBoundaryTest {
             noClasses()
                     .that().resideInAnyPackage(
                             "..auth..",
-                            "..adminauth..",
                             "..businesssystem..",
                             "..credential..",
                             "..capability..")
