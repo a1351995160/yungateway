@@ -7,6 +7,7 @@ import com.wps.yundoc.adminuser.infrastructure.AdminUserPO;
 import com.wps.yundoc.auth.application.ClientSecretDigestService;
 import com.wps.yundoc.common.error.YundocErrorCode;
 import com.wps.yundoc.common.error.YundocException;
+import com.wps.yundoc.common.security.AuthenticationAttemptLimiter;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -18,23 +19,36 @@ public class AdminAuthService {
     private final AdminJwtService adminJwtService;
     private final ClientSecretDigestService digestService;
     private final AdminUserMapper adminUserMapper;
+    private final AuthenticationAttemptLimiter attemptLimiter;
 
     public AdminAuthService(
             AdminAuthProperties properties,
             AdminJwtService adminJwtService,
             ClientSecretDigestService digestService,
-            AdminUserMapper adminUserMapper) {
+            AdminUserMapper adminUserMapper,
+            AuthenticationAttemptLimiter attemptLimiter) {
         this.properties = properties;
         this.adminJwtService = adminJwtService;
         this.digestService = digestService;
         this.adminUserMapper = adminUserMapper;
+        this.attemptLimiter = attemptLimiter;
     }
 
     public AdminJwt login(AdminLoginRequest request) {
-        if (properties.getUsername().equals(request.getUsername())) {
-            return loginConfiguredSuperAdmin(request);
+        return login(request, "");
+    }
+
+    public AdminJwt login(AdminLoginRequest request, String source) {
+        String limiterKey = loginLimiterKey(request.getUsername(), source);
+        attemptLimiter.assertAllowed(limiterKey);
+        try {
+            AdminJwt adminJwt = issueLoginToken(request);
+            attemptLimiter.recordSuccess(limiterKey);
+            return adminJwt;
+        } catch (YundocException ex) {
+            attemptLimiter.recordFailure(limiterKey);
+            throw ex;
         }
-        return loginDatabaseUser(request);
     }
 
     public AdminPrincipal requireAdmin(String authorizationHeader) {
@@ -51,6 +65,13 @@ public class AdminAuthService {
             throw new YundocException(YundocErrorCode.ADMIN_PERMISSION_DENIED);
         }
         return principal;
+    }
+
+    private AdminJwt issueLoginToken(AdminLoginRequest request) {
+        if (properties.getUsername().equals(request.getUsername())) {
+            return loginConfiguredSuperAdmin(request);
+        }
+        return loginDatabaseUser(request);
     }
 
     private AdminJwt loginConfiguredSuperAdmin(AdminLoginRequest request) {
@@ -122,5 +143,9 @@ public class AdminAuthService {
         if (!matched) {
             throw new YundocException(YundocErrorCode.TOKEN_INVALID);
         }
+    }
+
+    private String loginLimiterKey(String username, String source) {
+        return "admin-login:" + username + ":" + source;
     }
 }

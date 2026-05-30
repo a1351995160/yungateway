@@ -31,6 +31,15 @@ class LocalWpsUserTokenCacheTest {
         assertThat(cache.size()).isLessThanOrEqualTo(1);
     }
 
+    @Test
+    void reusesTokenByUserAcrossBusinessSystems() {
+        LocalWpsUserTokenCache cache = new LocalWpsUserTokenCache(properties(10));
+
+        cache.put("user-001", token(OffsetDateTime.now().plusMinutes(5)));
+
+        assertThat(cache.get("user-001")).isPresent();
+    }
+
     private WpsCredentialProperties properties(int maxTokenCount) {
         WpsCredentialProperties properties = new WpsCredentialProperties();
         properties.setRefreshSkew(Duration.ZERO);

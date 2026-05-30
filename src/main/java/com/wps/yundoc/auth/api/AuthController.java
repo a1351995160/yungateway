@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 
 @RestController
@@ -22,8 +23,13 @@ public class AuthController {
     }
 
     @PostMapping("/token")
-    public ApiResponse<TokenResponse> token(@Valid @RequestBody TokenRequest request) {
-        AuthToken token = authTokenService.issueToken(request.getClientId(), request.getClientSecret());
+    public ApiResponse<TokenResponse> token(
+            @Valid @RequestBody TokenRequest request,
+            HttpServletRequest servletRequest) {
+        AuthToken token = authTokenService.issueToken(
+                request.getClientId(),
+                request.getClientSecret(),
+                servletRequest.getRemoteAddr());
         String requestId = RequestContextHolder.currentRequestId().orElse("unknown");
         return ApiResponse.success(new TokenResponse(token), requestId);
     }

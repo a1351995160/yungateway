@@ -5,6 +5,7 @@ import com.wps.yundoc.businesssystem.infrastructure.BizSystemMapper;
 import com.wps.yundoc.businesssystem.infrastructure.BizSystemPO;
 import com.wps.yundoc.common.error.YundocErrorCode;
 import com.wps.yundoc.common.error.YundocException;
+import com.wps.yundoc.common.security.AuthenticationAttemptLimiter;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -35,7 +36,8 @@ class AuthTokenServiceTest {
                 bizSystemMapper,
                 mock(BizSystemApiPermissionMapper.class),
                 digestService,
-                mock(JwtService.class));
+                mock(JwtService.class),
+                new AuthenticationAttemptLimiter());
     }
 
     private BizSystemPO bizSystem(String status) {

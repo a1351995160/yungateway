@@ -36,6 +36,7 @@ public class WpsUserAuthorizationService {
     }
 
     public WpsUserToken requireUserToken(String userId, String businessSystemId) {
+        // WPS user authorization is platform-level, so one user's WPS token is intentionally reused across business systems.
         return tokenCache.get(userId).orElseThrow(() -> reauthRequired(userId, businessSystemId));
     }
 

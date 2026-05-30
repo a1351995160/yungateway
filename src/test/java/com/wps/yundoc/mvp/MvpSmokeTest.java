@@ -36,9 +36,9 @@ class MvpSmokeTest {
 
     @Test
     void completesMvpFlowWithMockWps() throws IOException {
-        String adminJwt = adminJwt();
-        JsonNode created = createBusinessSystem(adminJwt, "biz-mvp-smoke");
-        configurePermissions(adminJwt, "biz-mvp-smoke");
+        AdminCookies adminCookies = adminCookies();
+        JsonNode created = createBusinessSystem(adminCookies, "biz-mvp-smoke");
+        configurePermissions(adminCookies, "biz-mvp-smoke");
         String accessToken = accessToken(created);
 
         JsonNode preview = postAppPreview(accessToken);
@@ -55,30 +55,32 @@ class MvpSmokeTest {
         assertThat(files.path("data").path("items").get(0).path("fileId").asText()).isNotBlank();
     }
 
-    private String adminJwt() throws IOException {
+    private AdminCookies adminCookies() {
         ResponseEntity<String> response = restTemplate.postForEntity(
                 url("/api/v1/admin/auth/login"),
                 jsonEntity("{\"username\":\"admin\",\"password\":\"admin-password\"}"),
                 String.class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        return body(response).path("data").path("adminJwt").asText();
+        String sessionCookie = cookiePair(response, "yundoc_admin_session");
+        String csrfCookie = cookiePair(response, "yundoc_admin_csrf");
+        return new AdminCookies(sessionCookie + "; " + csrfCookie, cookieValue(csrfCookie));
     }
 
-    private JsonNode createBusinessSystem(String adminJwt, String businessSystemId) throws IOException {
+    private JsonNode createBusinessSystem(AdminCookies adminCookies, String businessSystemId) throws IOException {
         ResponseEntity<String> response = restTemplate.postForEntity(
                 url("/api/v1/admin/business-systems"),
-                authorized(adminJwt, "{\"businessSystemId\":\"" + businessSystemId
+                authorized(adminCookies, "{\"businessSystemId\":\"" + businessSystemId
                         + "\",\"businessSystemName\":\"MVP Smoke\",\"jwtTtlSeconds\":1800}"),
                 String.class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         return body(response);
     }
 
-    private void configurePermissions(String adminJwt, String businessSystemId) {
+    private void configurePermissions(AdminCookies adminCookies, String businessSystemId) {
         ResponseEntity<String> response = restTemplate.exchange(
                 url("/api/v1/admin/business-systems/" + businessSystemId + "/api-permissions"),
                 HttpMethod.PUT,
-                authorized(adminJwt, "{\"apiPermissions\":[\"app-preview:create\",\"user-files:list\"]}"),
+                authorized(adminCookies, "{\"apiPermissions\":[\"app-preview:create\",\"user-files:list\"]}"),
                 String.class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     }
@@ -130,9 +132,10 @@ class MvpSmokeTest {
                 + "\"},\"options\":{\"expireSeconds\":3600}}";
     }
 
-    private HttpEntity<String> authorized(String adminJwt, String body) {
+    private HttpEntity<String> authorized(AdminCookies adminCookies, String body) {
         HttpHeaders headers = jsonHeaders();
-        headers.setBearerAuth(adminJwt);
+        headers.add(HttpHeaders.COOKIE, adminCookies.cookieHeader);
+        headers.add("X-CSRF-Token", adminCookies.csrfToken);
         return new HttpEntity<>(body, headers);
     }
 
@@ -156,7 +159,29 @@ class MvpSmokeTest {
         return objectMapper.readTree(response.getBody());
     }
 
+    private String cookiePair(ResponseEntity<String> response, String name) {
+        return response.getHeaders().get(HttpHeaders.SET_COOKIE).stream()
+                .filter(cookie -> cookie.startsWith(name + "="))
+                .map(cookie -> cookie.split(";", 2)[0])
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("Missing cookie " + name));
+    }
+
+    private String cookieValue(String cookiePair) {
+        return cookiePair.substring(cookiePair.indexOf('=') + 1);
+    }
+
     private String url(String path) {
         return "http://localhost:" + port + path;
+    }
+
+    private static class AdminCookies {
+        private final String cookieHeader;
+        private final String csrfToken;
+
+        private AdminCookies(String cookieHeader, String csrfToken) {
+            this.cookieHeader = cookieHeader;
+            this.csrfToken = csrfToken;
+        }
     }
 }

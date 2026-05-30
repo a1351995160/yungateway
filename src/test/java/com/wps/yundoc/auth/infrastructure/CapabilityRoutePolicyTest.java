@@ -18,4 +18,15 @@ class CapabilityRoutePolicyTest {
 
         assertThat(policy.resolve(request)).contains("app-preview:create");
     }
+
+    @Test
+    void matchesExactCapabilityRouteWithTrailingSlash() {
+        CapabilityRoutePolicy policy = new CapabilityRoutePolicy();
+        MockHttpServletRequest request = new MockHttpServletRequest(
+                "POST",
+                "/api/v1/app/previews/");
+        request.setServletPath("/api/v1/app/previews/");
+
+        assertThat(policy.resolve(request)).contains("app-preview:create");
+    }
 }

@@ -18,6 +18,7 @@ management:
 
 yundoc:
   admin-console:
+    secure-cookies: false
     allowed-origins:
       - http://localhost:5173
   admin-auth:

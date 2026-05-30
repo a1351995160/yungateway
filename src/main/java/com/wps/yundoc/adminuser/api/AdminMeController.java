@@ -1,9 +1,8 @@
 package com.wps.yundoc.adminuser.api;
 
 import com.wps.yundoc.adminauth.application.AdminPrincipal;
+import com.wps.yundoc.adminauth.application.AdminPrincipals;
 import com.wps.yundoc.common.api.ApiResponse;
-import com.wps.yundoc.common.error.YundocErrorCode;
-import com.wps.yundoc.common.error.YundocException;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -32,10 +31,6 @@ public class AdminMeController {
     }
 
     private AdminPrincipal principal(HttpServletRequest request) {
-        Object principal = request.getAttribute(AdminPrincipal.REQUEST_ATTRIBUTE);
-        if (principal instanceof AdminPrincipal) {
-            return (AdminPrincipal) principal;
-        }
-        throw new YundocException(YundocErrorCode.AUTH_REQUIRED);
+        return AdminPrincipals.require(request);
     }
 }
