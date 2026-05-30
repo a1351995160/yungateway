@@ -2,6 +2,8 @@ package com.wps.yundoc.adminuser.api;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.wps.yundoc.adminauth.application.AdminJwtService;
+import com.wps.yundoc.adminauth.application.AdminRole;
 import com.wps.yundoc.adminuser.infrastructure.AdminUserMapper;
 import com.wps.yundoc.adminuser.infrastructure.AdminUserPO;
 import org.junit.jupiter.api.Test;
@@ -18,7 +20,9 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 
+import javax.servlet.http.Cookie;
 import java.io.IOException;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -46,6 +50,9 @@ class AdminUserControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @Autowired
+    private AdminJwtService adminJwtService;
 
     @Test
     void superAdminCanReadCurrentPrincipal() throws IOException {
@@ -142,6 +149,29 @@ class AdminUserControllerTest {
     }
 
     @Test
+    void cookieAuthenticatedSuperAdminCanManageAdminUsers() throws Exception {
+        AdminCookies cookies = loginSuperAdminCookies();
+        String username = "cookie-admin-user";
+
+        mockMvc.perform(post("/api/v1/admin/users")
+                        .cookie(cookies.sessionCookie(), cookies.csrfCookie())
+                        .header("X-CSRF-Token", cookies.csrfToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(createUserJson(username, "AUDITOR")))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/api/v1/admin/users")
+                        .cookie(cookies.sessionCookie()))
+                .andExpect(status().isOk());
+        mockMvc.perform(patch("/api/v1/admin/users/" + username)
+                        .cookie(cookies.sessionCookie(), cookies.csrfCookie())
+                        .header("X-CSRF-Token", cookies.csrfToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"displayName\":\"Cookie Admin User\",\"role\":\"SUPPORT\","
+                                + "\"status\":\"ENABLED\"}"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
     void disabledUserCannotLoginOrKeepUsingExistingToken() throws Exception {
         String username = "support-disabled";
         createUser(username, "SUPPORT");
@@ -176,7 +206,7 @@ class AdminUserControllerTest {
     }
 
     private String superAdminJwt() {
-        return login("admin", "admin-password");
+        return adminJwtService.issue("admin").getToken();
     }
 
     private String login(String username, String password) {
@@ -184,16 +214,32 @@ class AdminUserControllerTest {
                 url("/api/v1/admin/auth/login"),
                 jsonEntity(loginJson(username, password)),
                 String.class);
-        try {
-            JsonNode body = objectMapper.readTree(response.getBody());
-            return body.path("data").path("adminJwt").asText();
-        } catch (IOException ex) {
-            throw new AssertionError("admin login response must be json", ex);
-        }
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        AdminUserPO user = adminUserMapper.selectByUsername(username);
+        return adminJwtService.issue(username, AdminRole.valueOf(user.getRole())).getToken();
     }
 
     private String loginJson(String username, String password) {
         return "{\"username\":\"" + username + "\",\"password\":\"" + password + "\"}";
+    }
+
+    private AdminCookies loginSuperAdminCookies() throws Exception {
+        MvcResult result = mockMvc.perform(post("/api/v1/admin/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(loginJson("admin", "admin-password")))
+                .andExpect(status().isOk())
+                .andReturn();
+        String session = cookieValue(result, "yundoc_admin_session");
+        String csrf = cookieValue(result, "yundoc_admin_csrf");
+        return new AdminCookies(session, csrf);
+    }
+
+    private String cookieValue(MvcResult result, String name) {
+        return result.getResponse().getHeaders(HttpHeaders.SET_COOKIE).stream()
+                .filter(header -> header.startsWith(name + "="))
+                .findFirst()
+                .map(header -> header.substring((name + "=").length(), header.indexOf(';')))
+                .orElseThrow(() -> new AssertionError("Missing cookie " + name));
     }
 
     private HttpEntity<String> authorized(String body, String token) {
@@ -211,5 +257,23 @@ class AdminUserControllerTest {
 
     private String url(String path) {
         return "http://localhost:" + port + path;
+    }
+
+    private static class AdminCookies {
+        private final String sessionToken;
+        private final String csrfToken;
+
+        AdminCookies(String sessionToken, String csrfToken) {
+            this.sessionToken = sessionToken;
+            this.csrfToken = csrfToken;
+        }
+
+        Cookie sessionCookie() {
+            return new Cookie("yundoc_admin_session", sessionToken);
+        }
+
+        Cookie csrfCookie() {
+            return new Cookie("yundoc_admin_csrf", csrfToken);
+        }
     }
 }

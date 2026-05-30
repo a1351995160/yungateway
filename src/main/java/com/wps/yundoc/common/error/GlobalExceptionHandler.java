@@ -3,6 +3,8 @@ package com.wps.yundoc.common.error;
 import com.wps.yundoc.common.api.ApiResponse;
 import com.wps.yundoc.common.api.ErrorResponse;
 import com.wps.yundoc.common.context.RequestContextHolder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -16,6 +18,8 @@ import javax.validation.ConstraintViolationException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     @ExceptionHandler(YundocException.class)
     public ResponseEntity<ApiResponse<Void>> handleYundocException(YundocException exception) {
@@ -44,6 +48,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleUnhandledException(Exception exception) {
+        LOGGER.error("Unhandled request failure", exception);
         ErrorResponse error = ErrorResponse.of(
                 YundocErrorCode.INTERNAL_ERROR.name(),
                 YundocErrorCode.INTERNAL_ERROR.getDefaultMessage());

@@ -2,8 +2,10 @@ package com.wps.yundoc.adminauth.infrastructure;
 
 import com.wps.yundoc.adminauth.api.AdminAuthController;
 import com.wps.yundoc.adminauth.api.AdminLoginRequest;
+import com.wps.yundoc.adminauth.application.AdminAuthCookieService;
 import com.wps.yundoc.adminauth.application.AdminAuthService;
 import com.wps.yundoc.adminauth.application.AdminJwt;
+import com.wps.yundoc.adminauth.application.AdminPrincipal;
 import com.wps.yundoc.businesssystem.api.BusinessSystemAdminController;
 import com.wps.yundoc.businesssystem.api.BusinessSystemCreateResponse;
 import com.wps.yundoc.businesssystem.api.BusinessSystemResponse;
@@ -44,6 +46,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
                 classes = JwtAuthenticationFilter.class))
 @AutoConfigureMockMvc(addFilters = false)
 @Import({
+        AdminAuthCookieService.class,
         AdminAuthInterceptor.class,
         AdminAuthWebMvcConfiguration.class
 })
@@ -77,6 +80,8 @@ class AdminAuthWebMvcConfigurationTest {
 
     @Test
     void allowsAdminEndpointAfterAdminTokenValidation() throws Exception {
+        when(adminAuthService.requireAdmin("Bearer admin-token"))
+                .thenReturn(AdminPrincipal.superAdmin("admin"));
         when(businessSystemAdminService.create(any())).thenReturn(createResponse("biz-admin-token"));
 
         mockMvc.perform(post("/api/v1/admin/business-systems")
@@ -91,17 +96,18 @@ class AdminAuthWebMvcConfigurationTest {
 
     @Test
     void excludesAdminLoginFromAdminAuthInterceptor() throws Exception {
-        when(adminAuthService.login(any(AdminLoginRequest.class)))
+        when(adminAuthService.login(any(AdminLoginRequest.class), any()))
                 .thenReturn(new AdminJwt("admin-jwt", 1800));
 
         mockMvc.perform(post("/api/v1/admin/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"username\":\"admin\",\"password\":\"admin-password\"}"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.adminJwt").value("admin-jwt"));
+                .andExpect(jsonPath("$.data.adminJwt").doesNotExist())
+                .andExpect(jsonPath("$.data.expiresInSeconds").value(1800));
 
         verify(adminAuthService, never()).requireAdmin(any());
-        verify(adminAuthService).login(any(AdminLoginRequest.class));
+        verify(adminAuthService).login(any(AdminLoginRequest.class), any());
     }
 
     private BusinessSystemCreateResponse createResponse(String businessSystemId) {

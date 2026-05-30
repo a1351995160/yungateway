@@ -16,6 +16,7 @@ import com.wps.yundoc.businesssystem.infrastructure.BizSystemApiPermissionMapper
 import com.wps.yundoc.businesssystem.infrastructure.BizSystemApiPermissionPO;
 import com.wps.yundoc.businesssystem.infrastructure.BizSystemMapper;
 import com.wps.yundoc.businesssystem.infrastructure.BizSystemPO;
+import com.wps.yundoc.common.api.PageWindow;
 import com.wps.yundoc.common.error.YundocErrorCode;
 import com.wps.yundoc.common.error.YundocException;
 import org.springframework.dao.DuplicateKeyException;
@@ -25,7 +26,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -62,20 +65,27 @@ public class BusinessSystemAdminService {
     }
 
     public BusinessSystemResponse get(String businessSystemId) {
+        return get(businessSystemId, true);
+    }
+
+    public BusinessSystemResponse get(String businessSystemId, boolean includePermissions) {
         BizSystemPO bizSystem = requireBizSystem(businessSystemId);
-        List<BizSystemApiPermissionPO> permissions = permissionMapper.selectByBusinessSystemId(businessSystemId);
+        List<BizSystemApiPermissionPO> permissions = permissionsFor(businessSystemId, includePermissions);
         return assembler.toResponse(bizSystem, permissions);
     }
 
     public BusinessSystemListResponse list(BusinessSystemListRequest request) {
+        return list(request, true);
+    }
+
+    public BusinessSystemListResponse list(BusinessSystemListRequest request, boolean includePermissions) {
         List<BizSystemPO> fetched = bizSystemMapper.selectPage(
                 normalize(request.getKeyword()),
                 normalize(request.getStatus()),
                 request.getPageSize() + 1,
                 request.offset());
-        boolean hasMore = fetched.size() > request.getPageSize();
-        List<BizSystemPO> pageItems = pageItems(fetched, request.getPageSize());
-        return new BusinessSystemListResponse(toResponses(pageItems), hasMore);
+        PageWindow<BizSystemPO> page = PageWindow.fromFetched(fetched, request.getPageSize());
+        return new BusinessSystemListResponse(toResponses(page.getItems(), includePermissions), page.hasMore());
     }
 
     public BusinessSystemResponse getPermissions(String businessSystemId) {
@@ -100,8 +110,9 @@ public class BusinessSystemAdminService {
             String businessSystemId,
             BusinessSystemApiPermissionUpdateRequest request) {
         requireBizSystem(businessSystemId);
-        validateApiCodes(request.getApiPermissions());
-        replacePermissions(businessSystemId, request.getApiPermissions());
+        List<String> apiPermissions = normalizedApiCodes(request.getApiPermissions());
+        validateApiCodes(apiPermissions);
+        replacePermissions(businessSystemId, apiPermissions);
         bizSystemMapper.increasePermissionVersion(businessSystemId, LocalDateTime.now());
         return get(businessSystemId);
     }
@@ -186,6 +197,10 @@ public class BusinessSystemAdminService {
         }
     }
 
+    private List<String> normalizedApiCodes(List<String> apiCodes) {
+        return new ArrayList<>(new LinkedHashSet<>(apiCodes));
+    }
+
     private void validateApiCode(String apiCode) {
         if (!ApiPermissionDefinition.exists(apiCode)) {
             throw new YundocException(YundocErrorCode.VALIDATION_FAILED, "Unknown api permission");
@@ -194,13 +209,17 @@ public class BusinessSystemAdminService {
 
     private void replacePermissions(String businessSystemId, List<String> apiCodes) {
         permissionMapper.deleteByBusinessSystemId(businessSystemId);
-        for (String apiCode : apiCodes) {
-            permissionMapper.insert(newPermission(businessSystemId, apiCode));
+        if (apiCodes.isEmpty()) {
+            return;
         }
+        LocalDateTime now = LocalDateTime.now();
+        List<BizSystemApiPermissionPO> permissions = apiCodes.stream()
+                .map(apiCode -> newPermission(businessSystemId, apiCode, now))
+                .collect(Collectors.toList());
+        permissionMapper.insertAll(permissions);
     }
 
-    private BizSystemApiPermissionPO newPermission(String businessSystemId, String apiCode) {
-        LocalDateTime now = LocalDateTime.now();
+    private BizSystemApiPermissionPO newPermission(String businessSystemId, String apiCode, LocalDateTime now) {
         BizSystemApiPermissionPO permission = new BizSystemApiPermissionPO();
         permission.setBusinessSystemId(businessSystemId);
         permission.setApiCode(apiCode);
@@ -226,16 +245,41 @@ public class BusinessSystemAdminService {
         return value.trim();
     }
 
-    private List<BizSystemPO> pageItems(List<BizSystemPO> fetched, int pageSize) {
-        if (fetched.size() <= pageSize) {
-            return new ArrayList<>(fetched);
+    private List<BizSystemApiPermissionPO> permissionsFor(String businessSystemId, boolean includePermissions) {
+        if (!includePermissions) {
+            return Collections.emptyList();
         }
-        return new ArrayList<>(fetched.subList(0, pageSize));
+        return permissionMapper.selectByBusinessSystemId(businessSystemId);
     }
 
-    private List<BusinessSystemResponse> toResponses(List<BizSystemPO> bizSystems) {
+    private List<BusinessSystemResponse> toResponses(List<BizSystemPO> bizSystems, boolean includePermissions) {
+        if (bizSystems.isEmpty()) {
+            return Collections.emptyList();
+        }
+        Map<String, List<BizSystemApiPermissionPO>> permissionsByBusinessSystemId =
+                permissionsByBusinessSystemId(bizSystems, includePermissions);
         return bizSystems.stream()
-                .map(bizSystem -> assembler.toResponse(bizSystem, Collections.emptyList()))
+                .map(bizSystem -> assembler.toResponse(
+                        bizSystem,
+                        permissionsByBusinessSystemId.getOrDefault(
+                                bizSystem.getBusinessSystemId(),
+                                Collections.emptyList())))
                 .collect(Collectors.toList());
+    }
+
+    private List<String> businessSystemIds(List<BizSystemPO> bizSystems) {
+        return bizSystems.stream()
+                .map(BizSystemPO::getBusinessSystemId)
+                .collect(Collectors.toList());
+    }
+
+    private Map<String, List<BizSystemApiPermissionPO>> permissionsByBusinessSystemId(
+            List<BizSystemPO> bizSystems,
+            boolean includePermissions) {
+        if (!includePermissions) {
+            return Collections.emptyMap();
+        }
+        return permissionMapper.selectByBusinessSystemIds(businessSystemIds(bizSystems)).stream()
+                .collect(Collectors.groupingBy(BizSystemApiPermissionPO::getBusinessSystemId));
     }
 }

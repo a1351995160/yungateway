@@ -50,7 +50,7 @@
             #{loginDigest},
             #{loginSalt},
             #{loginAlgorithm},
-            #{lastLoginAt},
+            #{lastLoginAt,jdbcType=TIMESTAMP},
             #{createdAt},
             #{updatedAt}
         )

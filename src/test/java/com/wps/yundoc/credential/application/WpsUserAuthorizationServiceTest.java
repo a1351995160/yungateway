@@ -33,6 +33,17 @@ class WpsUserAuthorizationServiceTest {
         assertThat(service.requireUserToken("user-001", "biz-001").getAccessToken()).isEqualTo("user-token");
     }
 
+    @Test
+    void reusesWpsUserAuthorizationAcrossBusinessSystems() {
+        WpsUserAuthorizationService service = service();
+        YundocException reauth = reauthRequired(service);
+
+        service.handleCallback("ok-code", stateFrom(reauth));
+
+        assertThat(service.requireUserToken("user-001", "biz-001").getAccessToken()).isEqualTo("user-token");
+        assertThat(service.requireUserToken("user-001", "biz-002").getAccessToken()).isEqualTo("user-token");
+    }
+
     private YundocException reauthRequired(WpsUserAuthorizationService service) {
         try {
             service.requireUserToken("user-001", "biz-001");

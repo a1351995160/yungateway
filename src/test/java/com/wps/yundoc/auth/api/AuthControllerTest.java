@@ -90,6 +90,44 @@ class AuthControllerTest {
                 .andExpect(status().isUnauthorized());
     }
 
+    @Test
+    void rateLimitsRepeatedFailedTokenAttempts() throws Exception {
+        for (int attempt = 0; attempt < 4; attempt++) {
+            mockMvc.perform(post("/api/v1/auth/token")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(tokenJson("missing-client-limit", "wrong-secret")))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        mockMvc.perform(post("/api/v1/auth/token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(tokenJson("missing-client-limit", "wrong-secret")))
+                .andExpect(status().isTooManyRequests());
+    }
+
+    @Test
+    void successfulTokenRequestResetsFailedAttemptCounter() throws Exception {
+        BusinessSystemCreateResponse created = createBusinessSystem("biz-token-reset-limit");
+        String clientId = created.getBusinessSystem().getClientId();
+        for (int attempt = 0; attempt < 3; attempt++) {
+            mockMvc.perform(post("/api/v1/auth/token")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(tokenJson(clientId, "wrong-secret")))
+                    .andExpect(status().isUnauthorized());
+        }
+        mockMvc.perform(post("/api/v1/auth/token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(tokenJson(clientId, created.getClientSecret())))
+                .andExpect(status().isOk());
+
+        for (int attempt = 0; attempt < 4; attempt++) {
+            mockMvc.perform(post("/api/v1/auth/token")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(tokenJson(clientId, "wrong-secret")))
+                    .andExpect(status().isUnauthorized());
+        }
+    }
+
     private BusinessSystemCreateResponse createBusinessSystem(String businessSystemId) {
         return createBusinessSystem(businessSystemId, 1800);
     }

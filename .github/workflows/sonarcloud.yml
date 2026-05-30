@@ -15,6 +15,19 @@ jobs:
   sonarcloud:
     name: Build, P3C PMD, and SonarQube Cloud
     runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: yes
+          MYSQL_DATABASE: yundoc_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -30,12 +43,18 @@ jobs:
 
       - name: Build, generate P3C PMD report, and scan
         env:
+          LOCAL_MYSQL_HOST: 127.0.0.1
+          LOCAL_MYSQL_PORT: 3306
+          LOCAL_MYSQL_USERNAME: root
+          LOCAL_MYSQL_PASSWORD: ""
+          LOCAL_MYSQL_TEST_DATABASE: yundoc_test
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
           chmod +x ./mvnw
-          ./mvnw -B -DskipTests package pmd:pmd sonar:sonar \
+          ./mvnw -B verify pmd:pmd sonar:sonar \
             -Dsonar.host.url=https://sonarcloud.io \
             -Dsonar.organization=${{ vars.SONAR_ORGANIZATION }} \
             -Dsonar.projectKey=a1351995160_yungateway \
             -Dsonar.projectName=yungateway \
+            -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
             -Dsonar.java.pmd.reportPaths=target/pmd.xml

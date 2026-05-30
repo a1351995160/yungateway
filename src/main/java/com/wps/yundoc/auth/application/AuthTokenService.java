@@ -7,6 +7,7 @@ import com.wps.yundoc.businesssystem.infrastructure.BizSystemMapper;
 import com.wps.yundoc.businesssystem.infrastructure.BizSystemPO;
 import com.wps.yundoc.common.error.YundocErrorCode;
 import com.wps.yundoc.common.error.YundocException;
+import com.wps.yundoc.common.security.AuthenticationAttemptLimiter;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -22,19 +23,39 @@ public class AuthTokenService {
     private final BizSystemApiPermissionMapper permissionMapper;
     private final ClientSecretDigestService digestService;
     private final JwtService jwtService;
+    private final AuthenticationAttemptLimiter attemptLimiter;
 
     public AuthTokenService(
             BizSystemMapper bizSystemMapper,
             BizSystemApiPermissionMapper permissionMapper,
             ClientSecretDigestService digestService,
-            JwtService jwtService) {
+            JwtService jwtService,
+            AuthenticationAttemptLimiter attemptLimiter) {
         this.bizSystemMapper = bizSystemMapper;
         this.permissionMapper = permissionMapper;
         this.digestService = digestService;
         this.jwtService = jwtService;
+        this.attemptLimiter = attemptLimiter;
     }
 
     public AuthToken issueToken(String clientId, String clientSecret) {
+        return issueToken(clientId, clientSecret, "");
+    }
+
+    public AuthToken issueToken(String clientId, String clientSecret, String source) {
+        String limiterKey = tokenLimiterKey(clientId, source);
+        attemptLimiter.assertAllowed(limiterKey);
+        try {
+            AuthToken token = issueTokenAfterRateLimit(clientId, clientSecret);
+            attemptLimiter.recordSuccess(limiterKey);
+            return token;
+        } catch (YundocException ex) {
+            attemptLimiter.recordFailure(limiterKey);
+            throw ex;
+        }
+    }
+
+    private AuthToken issueTokenAfterRateLimit(String clientId, String clientSecret) {
         BizSystemPO bizSystem = requireByClientId(clientId);
         requireEnabled(bizSystem);
         requireSecretMatch(clientSecret, bizSystem);
@@ -95,5 +116,9 @@ public class AuthTokenService {
             return jwtService.expiresInSeconds();
         }
         return ttlSeconds.longValue();
+    }
+
+    private String tokenLimiterKey(String clientId, String source) {
+        return "business-token:" + clientId + ":" + source;
     }
 }

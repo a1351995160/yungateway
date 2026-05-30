@@ -12,14 +12,15 @@ import com.wps.yundoc.adminuser.infrastructure.AdminUserMapper;
 import com.wps.yundoc.adminuser.infrastructure.AdminUserPO;
 import com.wps.yundoc.auth.application.ClientSecretDigest;
 import com.wps.yundoc.auth.application.ClientSecretDigestService;
+import com.wps.yundoc.common.api.PageWindow;
 import com.wps.yundoc.common.error.YundocErrorCode;
 import com.wps.yundoc.common.error.YundocException;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class AdminUserService {
@@ -46,13 +47,11 @@ public class AdminUserService {
                 request.getRole(),
                 limit,
                 offset);
-        boolean hasMore = users.size() > request.getPageSize();
-        List<AdminUserResponse> items = new ArrayList<>();
-        int itemCount = Math.min(users.size(), request.getPageSize());
-        for (int index = 0; index < itemCount; index++) {
-            items.add(toResponse(users.get(index)));
-        }
-        return new AdminUserListResponse(items, hasMore);
+        PageWindow<AdminUserPO> page = PageWindow.fromFetched(users, request.getPageSize());
+        List<AdminUserResponse> items = page.getItems().stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+        return new AdminUserListResponse(items, page.hasMore());
     }
 
     public AdminUserResponse create(AdminUserCreateRequest request) {

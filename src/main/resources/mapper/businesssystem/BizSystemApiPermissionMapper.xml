@@ -37,6 +37,25 @@
         )
     </insert>
 
+    <insert id="insertAll">
+        INSERT INTO biz_system_api_permission (
+            business_system_id,
+            api_code,
+            status,
+            created_at,
+            updated_at
+        ) VALUES
+        <foreach collection="permissions" item="permission" separator=",">
+            (
+                #{permission.businessSystemId},
+                #{permission.apiCode},
+                #{permission.status},
+                #{permission.createdAt},
+                #{permission.updatedAt}
+            )
+        </foreach>
+    </insert>
+
     <select id="selectByBusinessSystemIdAndApiCode" resultMap="BizSystemApiPermissionResultMap">
         SELECT
         <include refid="BizSystemApiPermissionColumns"/>
@@ -51,6 +70,17 @@
         FROM biz_system_api_permission
         WHERE business_system_id = #{businessSystemId}
         ORDER BY api_code ASC
+    </select>
+
+    <select id="selectByBusinessSystemIds" resultMap="BizSystemApiPermissionResultMap">
+        SELECT
+        <include refid="BizSystemApiPermissionColumns"/>
+        FROM biz_system_api_permission
+        WHERE business_system_id IN
+        <foreach collection="businessSystemIds" item="businessSystemId" open="(" separator="," close=")">
+            #{businessSystemId}
+        </foreach>
+        ORDER BY business_system_id ASC, api_code ASC
     </select>
 
     <delete id="deleteByBusinessSystemId">
