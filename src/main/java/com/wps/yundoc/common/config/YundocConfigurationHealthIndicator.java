@@ -56,9 +56,14 @@ public class YundocConfigurationHealthIndicator implements HealthIndicator {
                 || missing(wpsClientProperties.getAuthorizePath())
                 || missing(wpsClientProperties.getUserTokenPath())
                 || missing(wpsClientProperties.getRedirectUri())
-                || missing(wpsClientProperties.getOAuthScope())
+                || missing(wpsClientProperties.getOauthScope())
                 || missing(wpsClientProperties.getAppId())
-                || missing(wpsClientProperties.getAppSecret());
+                || missing(wpsClientProperties.getAppSecret())
+                || missingPreviewAllowedHosts();
+    }
+
+    private boolean missingPreviewAllowedHosts() {
+        return wpsClientProperties.getPreviewAllowedHosts().stream().noneMatch(host -> !missing(host));
     }
 
     private boolean missing(String value) {

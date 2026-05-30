@@ -23,6 +23,16 @@ public class JwtService {
     private static final String HEADER = "{\"alg\":\"HS256\",\"typ\":\"JWT\"}";
     private static final String JCA_HMAC_SHA256 = "HmacSHA256";
     private static final String TOKEN_TYPE = "business-jwt";
+    private static final int JWT_PART_COUNT = 3;
+    private static final String CLAIM_AUDIENCE = "aud";
+    private static final String CLAIM_BUSINESS_SYSTEM_ID = "businessSystemId";
+    private static final String CLAIM_CLIENT_ID = "clientId";
+    private static final String CLAIM_EXPIRY = "exp";
+    private static final String CLAIM_ISSUER = "iss";
+    private static final String CLAIM_JWT_ID = "jti";
+    private static final String CLAIM_PERMISSION_VERSION = "permissionVersion";
+    private static final String CLAIM_TOKEN_VERSION = "tokenVersion";
+    private static final String CLAIM_TYPE = "typ";
 
     private final JwtProperties properties;
     private final ObjectMapper objectMapper;
@@ -59,21 +69,21 @@ public class JwtService {
 
     private Map<String, Object> payload(BusinessSystemPrincipal principal, long issuedAt, long expiresAt) {
         Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("iss", properties.getIssuer());
-        payload.put("aud", properties.getAudience());
-        payload.put("typ", TOKEN_TYPE);
-        payload.put("businessSystemId", principal.getBusinessSystemId());
-        payload.put("clientId", principal.getClientId());
-        payload.put("tokenVersion", principal.getTokenVersion());
-        payload.put("permissionVersion", principal.getPermissionVersion());
-        payload.put("jti", principal.getJti());
+        payload.put(CLAIM_ISSUER, properties.getIssuer());
+        payload.put(CLAIM_AUDIENCE, properties.getAudience());
+        payload.put(CLAIM_TYPE, TOKEN_TYPE);
+        payload.put(CLAIM_BUSINESS_SYSTEM_ID, principal.getBusinessSystemId());
+        payload.put(CLAIM_CLIENT_ID, principal.getClientId());
+        payload.put(CLAIM_TOKEN_VERSION, principal.getTokenVersion());
+        payload.put(CLAIM_PERMISSION_VERSION, principal.getPermissionVersion());
+        payload.put(CLAIM_JWT_ID, principal.getJti());
         payload.put("iat", issuedAt);
-        payload.put("exp", expiresAt);
+        payload.put(CLAIM_EXPIRY, expiresAt);
         return payload;
     }
 
     private void validateFormat(String[] parts) {
-        if (parts.length != 3) {
+        if (parts.length != JWT_PART_COUNT) {
             throw new YundocException(YundocErrorCode.TOKEN_INVALID);
         }
     }
@@ -95,36 +105,36 @@ public class JwtService {
     }
 
     private void validateIssuer(JsonNode payload) {
-        if (!properties.getIssuer().equals(payload.path("iss").asText())) {
+        if (!properties.getIssuer().equals(payload.path(CLAIM_ISSUER).asText())) {
             throw new YundocException(YundocErrorCode.TOKEN_INVALID);
         }
     }
 
     private void validateAudience(JsonNode payload) {
-        if (!properties.getAudience().equals(payload.path("aud").asText())) {
+        if (!properties.getAudience().equals(payload.path(CLAIM_AUDIENCE).asText())) {
             throw new YundocException(YundocErrorCode.TOKEN_INVALID);
         }
     }
 
     private void validateType(JsonNode payload) {
-        if (!TOKEN_TYPE.equals(payload.path("typ").asText())) {
+        if (!TOKEN_TYPE.equals(payload.path(CLAIM_TYPE).asText())) {
             throw new YundocException(YundocErrorCode.TOKEN_INVALID);
         }
     }
 
     private void validateExpiry(JsonNode payload) {
-        if (payload.path("exp").asLong() <= Instant.now().getEpochSecond()) {
+        if (payload.path(CLAIM_EXPIRY).asLong() <= Instant.now().getEpochSecond()) {
             throw new YundocException(YundocErrorCode.TOKEN_INVALID);
         }
     }
 
     private BusinessSystemPrincipal principal(JsonNode payload) {
         return new BusinessSystemPrincipal(
-                payload.path("businessSystemId").asText(),
-                payload.path("clientId").asText(),
-                payload.path("jti").asText(),
-                payload.path("tokenVersion").asInt(),
-                payload.path("permissionVersion").asInt());
+                payload.path(CLAIM_BUSINESS_SYSTEM_ID).asText(),
+                payload.path(CLAIM_CLIENT_ID).asText(),
+                payload.path(CLAIM_JWT_ID).asText(),
+                payload.path(CLAIM_TOKEN_VERSION).asInt(),
+                payload.path(CLAIM_PERMISSION_VERSION).asInt());
     }
 
     private JsonNode readPayload(String encodedPayload) {

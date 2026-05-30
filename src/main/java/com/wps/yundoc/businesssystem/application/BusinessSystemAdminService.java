@@ -55,7 +55,7 @@ public class BusinessSystemAdminService {
         this.assembler = assembler;
     }
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public BusinessSystemCreateResponse create(BusinessSystemCreateRequest request) {
         String clientSecret = secretGenerator.generateClientSecret();
         BizSystemPO bizSystem = newBizSystem(request, clientSecret);
@@ -92,7 +92,7 @@ public class BusinessSystemAdminService {
         return get(businessSystemId);
     }
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public BusinessSystemResponse update(String businessSystemId, BusinessSystemUpdateRequest request) {
         requireBizSystem(businessSystemId);
         bizSystemMapper.updateProfile(
@@ -105,7 +105,7 @@ public class BusinessSystemAdminService {
         return get(businessSystemId);
     }
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public BusinessSystemResponse savePermissions(
             String businessSystemId,
             BusinessSystemApiPermissionUpdateRequest request) {
@@ -117,7 +117,7 @@ public class BusinessSystemAdminService {
         return get(businessSystemId);
     }
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public BusinessSystemSecretResponse resetClientSecret(String businessSystemId) {
         BizSystemPO bizSystem = requireBizSystem(businessSystemId);
         String clientSecret = secretGenerator.generateClientSecret();

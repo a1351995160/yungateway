@@ -122,7 +122,7 @@ class BusinessSystemAdminControllerTest {
     }
 
     @Test
-    void filtersBusinessSystemListByKeyword() throws IOException {
+    void filtersBusinessSystemListByKeyword() {
         createBusinessSystem("biz-admin-keyword-hit");
         createBusinessSystem("biz-admin-keyword-miss");
 

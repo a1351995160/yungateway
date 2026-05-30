@@ -7,6 +7,7 @@ import com.wps.yundoc.adminuser.api.AdminUserCreateRequest;
 import com.wps.yundoc.adminuser.api.AdminUserListRequest;
 import com.wps.yundoc.adminuser.api.AdminUserListResponse;
 import com.wps.yundoc.adminuser.api.AdminUserResponse;
+import com.wps.yundoc.adminuser.api.AdminUserResponse.AdminUserView;
 import com.wps.yundoc.adminuser.api.AdminUserUpdateRequest;
 import com.wps.yundoc.adminuser.infrastructure.AdminUserMapper;
 import com.wps.yundoc.adminuser.infrastructure.AdminUserPO;
@@ -106,14 +107,50 @@ public class AdminUserService {
     }
 
     private AdminUserResponse toResponse(AdminUserPO user) {
-        return new AdminUserResponse(
-                user.getUsername(),
-                user.getDisplayName(),
-                AdminRole.valueOf(user.getRole()),
-                AdminStatus.valueOf(user.getStatus()),
-                false,
-                user.getLastLoginAt(),
-                user.getCreatedAt(),
-                user.getUpdatedAt());
+        return AdminUserResponse.databaseAdmin(new DatabaseAdminUserView(user));
+    }
+
+    private static class DatabaseAdminUserView implements AdminUserView {
+
+        private final AdminUserPO user;
+
+        DatabaseAdminUserView(AdminUserPO user) {
+            this.user = user;
+        }
+
+        @Override
+        public String getUsername() {
+            return user.getUsername();
+        }
+
+        @Override
+        public String getDisplayName() {
+            return user.getDisplayName();
+        }
+
+        @Override
+        public AdminRole getRole() {
+            return AdminRole.valueOf(user.getRole());
+        }
+
+        @Override
+        public AdminStatus getStatus() {
+            return AdminStatus.valueOf(user.getStatus());
+        }
+
+        @Override
+        public LocalDateTime getLastLoginAt() {
+            return user.getLastLoginAt();
+        }
+
+        @Override
+        public LocalDateTime getCreatedAt() {
+            return user.getCreatedAt();
+        }
+
+        @Override
+        public LocalDateTime getUpdatedAt() {
+            return user.getUpdatedAt();
+        }
     }
 }

@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>Security Scan Report - E:\wps</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.55; margin: 32px; color: #172033; }
+    h1, h2, h3 { color: #0f172a; }
+    code { background: #f1f5f9; padding: 2px 4px; border-radius: 4px; }
+    .finding { border-left: 4px solid #d97706; padding-left: 12px; margin: 18px 0; }
+    .high { border-color: #dc2626; }
+  </style>
+</head>
+<body>
+  <h1>Security Scan Report - E:\wps</h1>
+  <p>后端未发现 SQL 注入、XXE/反序列化、用户输入 SSRF 或 admin CSRF/CORS 控制缺失。主要风险集中在 WPS USER/APP 授权边界。</p>
+  <div class="finding high">
+    <h2>B-001 High - Shared USER assertion key does not prove caller may act as requested user</h2>
+    <p>全局 USER 断言密钥可以签任意 <code>userId</code>，而 WPS user token 又按 <code>userId</code> 全业务系统复用。需要增加业务系统到用户的授权证明。</p>
+  </div>
+  <div class="finding">
+    <h2>B-002 Medium/High - APP preview can create preview links for arbitrary file IDs</h2>
+    <p><code>fileId</code> 只做长度校验，服务使用全局 WPS APP credential 创建预览。需要文件归属或授权校验。</p>
+  </div>
+  <div class="finding">
+    <h2>B-003 Medium - Preview URL and expiry are trusted and returned directly</h2>
+    <p>当前只校验 URL 非空和 expiry 可解析。应校验 HTTPS、host allowlist、无 userinfo、expiry 不超过请求窗口；如需强制有效期，需要网关短链/代理。</p>
+  </div>
+  <div class="finding">
+    <h2>B-004 Medium - OAuth callback does not verify WPS subject</h2>
+    <p>OAuth code 换回 token 后直接缓存到 state 的平台 userId 下，需要核对 WPS 授权主体。</p>
+  </div>
+  <h2>Checked And Not Found</h2>
+  <ul>
+    <li>SQL injection: mappers use <code>#{...}</code>; no <code>${...}</code>.</li>
+    <li>XML/XXE/deserialization: no app parser/deserialization sinks found.</li>
+    <li>CSRF/CORS: admin cookie writes have CSRF and allowlisted origins.</li>
+    <li>Secrets/logging: prod secrets are env-backed; no sensitive logging pattern found.</li>
+  </ul>
+</body>
+</html>

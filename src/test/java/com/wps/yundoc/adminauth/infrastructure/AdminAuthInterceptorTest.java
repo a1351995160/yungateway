@@ -22,7 +22,7 @@ class AdminAuthInterceptorTest {
     private static final Object HANDLER = new Object();
 
     @Test
-    void validatesAuthorizationHeader() throws Exception {
+    void validatesAuthorizationHeader() {
         AdminAuthService adminAuthService = mock(AdminAuthService.class);
         AdminAuthInterceptor interceptor = new AdminAuthInterceptor(adminAuthService, cookieService());
         MockHttpServletRequest request = new MockHttpServletRequest();
@@ -56,8 +56,9 @@ class AdminAuthInterceptorTest {
         doThrow(new YundocException(YundocErrorCode.TOKEN_INVALID))
                 .when(adminAuthService)
                 .requireAdmin("Bearer business-token");
+        MockHttpServletResponse response = new MockHttpServletResponse();
 
-        assertThatThrownBy(() -> interceptor.preHandle(request, new MockHttpServletResponse(), HANDLER))
+        assertThatThrownBy(() -> interceptor.preHandle(request, response, HANDLER))
                 .isInstanceOf(YundocException.class)
                 .hasFieldOrPropertyWithValue("errorCode", YundocErrorCode.TOKEN_INVALID);
     }

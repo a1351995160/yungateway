@@ -28,7 +28,14 @@ yundoc:
     file-list-path: /api/user/files
     authorize-path: /oauth/authorize
     user-token-path: /oauth/user-token
+    preview-allowed-hosts: ${YUNDOC_WPS_PREVIEW_ALLOWED_HOSTS:}
+    preview-expire-skew: 1m
   wps-credential:
     max-user-token-count: 10000
   wps-user-authorization:
     max-state-count: 10000
+  user-assertion:
+    secret: ${YUNDOC_USER_ASSERTION_SECRET:}
+    key-id: ${YUNDOC_USER_ASSERTION_KEY_ID:v1}
+    timestamp-tolerance: 5m
+    max-nonce-count: 10000

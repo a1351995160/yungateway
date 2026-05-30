@@ -30,9 +30,16 @@ yundoc:
     audience: yundoc-business-systems-local
     secret: ${YUNDOC_LOCAL_BUSINESS_JWT_SECRET:local-business-jwt-secret-with-enough-length}
     ttl: 30m
+  user-assertion:
+    secret: ${YUNDOC_LOCAL_USER_ASSERTION_SECRET:local-user-assertion-secret-with-enough-length}
+    key-id: v1
+    timestamp-tolerance: 5m
   wps-client:
     base-url: https://wps.test
     redirect-uri: http://localhost:8080/api/v1/wps/oauth/callback
     oauth-scope: files.read
     app-id: local-wps-app-id
     app-secret: ${WPS_LOCAL_APP_SECRET:local-wps-placeholder}
+    preview-allowed-hosts:
+      - preview.test
+    preview-expire-skew: 1m

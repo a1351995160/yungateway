@@ -22,6 +22,12 @@ public class AdminJwtService {
     private static final String HEADER = "{\"alg\":\"HS256\",\"typ\":\"JWT\"}";
     private static final String JCA_HMAC_SHA256 = "HmacSHA256";
     private static final String TOKEN_TYPE = "admin-jwt";
+    private static final String BEARER_PREFIX = "Bearer ";
+    private static final int JWT_PART_COUNT = 3;
+    private static final String CLAIM_EXPIRY = "exp";
+    private static final String CLAIM_ROLE = "role";
+    private static final String CLAIM_SUBJECT = "sub";
+    private static final String CLAIM_TYPE = "typ";
 
     private final AdminAuthProperties properties;
     private final ObjectMapper objectMapper;
@@ -53,11 +59,11 @@ public class AdminJwtService {
 
     private Map<String, Object> payload(String username, AdminRole role, long issuedAt, long expiresAt) {
         Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("sub", username);
-        payload.put("role", role.name());
+        payload.put(CLAIM_SUBJECT, username);
+        payload.put(CLAIM_ROLE, role.name());
         payload.put("iat", issuedAt);
-        payload.put("exp", expiresAt);
-        payload.put("typ", TOKEN_TYPE);
+        payload.put(CLAIM_EXPIRY, expiresAt);
+        payload.put(CLAIM_TYPE, TOKEN_TYPE);
         return payload;
     }
 
@@ -65,14 +71,14 @@ public class AdminJwtService {
         if (authorizationHeader == null) {
             throw new YundocException(YundocErrorCode.AUTH_REQUIRED);
         }
-        if (!authorizationHeader.startsWith("Bearer ")) {
+        if (!authorizationHeader.startsWith(BEARER_PREFIX)) {
             throw new YundocException(YundocErrorCode.AUTH_REQUIRED);
         }
-        return authorizationHeader.substring("Bearer ".length());
+        return authorizationHeader.substring(BEARER_PREFIX.length());
     }
 
     private void validateFormat(String[] parts) {
-        if (parts.length != 3) {
+        if (parts.length != JWT_PART_COUNT) {
             throw new YundocException(YundocErrorCode.TOKEN_INVALID);
         }
     }
@@ -88,10 +94,10 @@ public class AdminJwtService {
 
     private AdminPrincipal validatePayload(String encodedPayload) {
         JsonNode payload = readPayload(encodedPayload);
-        boolean adminToken = TOKEN_TYPE.equals(payload.path("typ").asText());
-        boolean unexpired = payload.path("exp").asLong() > Instant.now().getEpochSecond();
-        String username = payload.path("sub").asText();
-        AdminRole role = parseRole(payload.path("role").asText());
+        boolean adminToken = TOKEN_TYPE.equals(payload.path(CLAIM_TYPE).asText());
+        boolean unexpired = payload.path(CLAIM_EXPIRY).asLong() > Instant.now().getEpochSecond();
+        String username = payload.path(CLAIM_SUBJECT).asText();
+        AdminRole role = parseRole(payload.path(CLAIM_ROLE).asText());
         if (!adminToken) {
             throw new YundocException(YundocErrorCode.TOKEN_INVALID);
         }

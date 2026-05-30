@@ -1,8 +1,16 @@
 package com.wps.yundoc.businesssystem.api;
 
 import com.wps.yundoc.businesssystem.domain.ApiCode;
+import com.wps.yundoc.businesssystem.domain.WpsIdentityType;
 
 public class ApiPermissionDefinitionResponse {
+
+    private static final String APP_PREVIEW_PREFIX = "app-preview";
+    private static final String DELETE_OPERATION = "delete";
+    private static final String DOWNLOAD_OPERATION = "download";
+    private static final String RISK_HIGH = "HIGH";
+    private static final String RISK_LOW = "LOW";
+    private static final String RISK_MEDIUM = "MEDIUM";
 
     private final String apiCode;
     private final String identityType;
@@ -58,22 +66,26 @@ public class ApiPermissionDefinitionResponse {
     }
 
     private static String description(ApiCode apiCode) {
-        if (apiCode.getCode().startsWith("app-preview")) {
+        if (apiCode.getCode().startsWith(APP_PREVIEW_PREFIX)) {
             return "Allows app identity to create preview resources.";
         }
-        if (apiCode.getCode().contains("download") || apiCode.getCode().contains("delete")) {
+        if (isHighRisk(apiCode)) {
             return "Allows user identity to perform higher risk file operations.";
         }
         return "Allows user identity to perform file or folder operations.";
     }
 
     private static String riskLevel(ApiCode apiCode) {
-        if (apiCode.getCode().contains("delete") || apiCode.getCode().contains("download")) {
-            return "HIGH";
+        if (isHighRisk(apiCode)) {
+            return RISK_HIGH;
         }
-        if (apiCode.getIdentityType().name().equals("USER")) {
-            return "MEDIUM";
+        if (WpsIdentityType.USER == apiCode.getIdentityType()) {
+            return RISK_MEDIUM;
         }
-        return "LOW";
+        return RISK_LOW;
+    }
+
+    private static boolean isHighRisk(ApiCode apiCode) {
+        return apiCode.getCode().contains(DELETE_OPERATION) || apiCode.getCode().contains(DOWNLOAD_OPERATION);
     }
 }

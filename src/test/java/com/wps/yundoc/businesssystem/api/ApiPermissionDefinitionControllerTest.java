@@ -35,14 +35,15 @@ class ApiPermissionDefinitionControllerTest {
                 .getResponse()
                 .getContentAsString();
 
-        assertThat(response).contains("app-preview:create");
-        assertThat(response).contains("\"identityType\":\"APP\"");
-        assertThat(response).contains("user-files:list");
-        assertThat(response).contains("\"identityType\":\"USER\"");
-        assertThat(response).doesNotContain("oauth");
-        assertThat(response).doesNotContain("token");
-        assertThat(response).doesNotContain("/api/");
-        assertThat(response).doesNotContain("scope");
+        assertThat(response)
+                .contains("app-preview:create")
+                .contains("\"identityType\":\"APP\"")
+                .contains("user-files:list")
+                .contains("\"identityType\":\"USER\"")
+                .doesNotContain("oauth")
+                .doesNotContain("token")
+                .doesNotContain("/api/")
+                .doesNotContain("scope");
     }
 
     @Test

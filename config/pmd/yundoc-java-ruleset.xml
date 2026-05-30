@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ruleset name="Yundoc Java CI Rules"
+         xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.github.io/pmd-6.8.0/ruleset_xml_schema.xsd">
+    <description>
+        Repository-specific PMD rules that turn docs/coding-standards.md into CI-visible
+        external issues for SonarCloud. Alibaba P3C rules are configured separately in pom.xml.
+    </description>
+
+    <!-- docs/coding-standards.md: method parameters must not exceed 5. -->
+    <rule ref="category/java/design.xml/ExcessiveParameterList">
+        <priority>3</priority>
+        <properties>
+            <property name="minimum" value="6"/>
+        </properties>
+    </rule>
+
+    <!-- docs/coding-standards.md: method body should stay within 20 lines. -->
+    <rule ref="category/java/design.xml/ExcessiveMethodLength">
+        <priority>3</priority>
+        <properties>
+            <property name="minimum" value="21"/>
+        </properties>
+    </rule>
+
+    <!-- docs/coding-standards.md: class/file should stay within 250 lines. -->
+    <rule ref="category/java/design.xml/ExcessiveClassLength">
+        <priority>3</priority>
+        <properties>
+            <property name="minimum" value="251"/>
+        </properties>
+    </rule>
+
+    <!-- docs/coding-standards.md: cyclomatic complexity above 4 should be reviewed. -->
+    <rule ref="category/java/design.xml/CyclomaticComplexity">
+        <priority>3</priority>
+        <properties>
+            <property name="methodReportLevel" value="5"/>
+            <property name="classReportLevel" value="40"/>
+        </properties>
+    </rule>
+
+    <!-- docs/coding-standards.md: direct class coupling should stay small. -->
+    <rule ref="category/java/design.xml/CouplingBetweenObjects">
+        <priority>3</priority>
+        <properties>
+            <property name="threshold" value="15"/>
+        </properties>
+    </rule>
+
+    <!-- docs/coding-standards.md: repeated string literals must be extracted. -->
+    <rule ref="category/java/errorprone.xml/AvoidDuplicateLiterals">
+        <priority>3</priority>
+        <properties>
+            <property name="maxDuplicateLiterals" value="3"/>
+        </properties>
+    </rule>
+
+    <rule ref="category/java/bestpractices.xml/AvoidReassigningParameters"/>
+    <rule ref="category/java/bestpractices.xml/UnusedFormalParameter"/>
+    <rule ref="category/java/bestpractices.xml/UnusedImports"/>
+    <rule ref="category/java/bestpractices.xml/UnusedLocalVariable"/>
+    <rule ref="category/java/bestpractices.xml/UnusedPrivateMethod"/>
+    <rule ref="category/java/design.xml/AvoidCatchingGenericException"/>
+    <rule ref="category/java/design.xml/AvoidThrowingRawExceptionTypes"/>
+    <rule ref="category/java/errorprone.xml/AssignmentInOperand"/>
+<rule ref="category/java/errorprone.xml/ReturnFromFinallyBlock"/>
+<rule ref="category/java/security.xml/HardCodedCryptoKey"/>
+<rule ref="category/java/security.xml/InsecureCryptoIv"/>
+</ruleset>

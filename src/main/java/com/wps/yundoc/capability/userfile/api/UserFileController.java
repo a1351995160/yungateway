@@ -1,5 +1,6 @@
 package com.wps.yundoc.capability.userfile.api;
 
+import com.wps.yundoc.auth.application.UserAssertionService;
 import com.wps.yundoc.capability.userfile.application.UserFileListCommand;
 import com.wps.yundoc.capability.userfile.application.UserFileListResult;
 import com.wps.yundoc.capability.userfile.application.UserFileService;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -28,18 +30,23 @@ public class UserFileController {
     private static final Pattern RESOURCE_PATTERN = Pattern.compile("^[A-Za-z0-9._:@/+=-]+$");
 
     private final UserFileService userFileService;
+    private final UserAssertionService userAssertionService;
 
-    public UserFileController(UserFileService userFileService) {
+    public UserFileController(UserFileService userFileService, UserAssertionService userAssertionService) {
         this.userFileService = userFileService;
+        this.userAssertionService = userAssertionService;
     }
 
     @GetMapping
     public ApiResponse<UserFileListResponse> listFiles(
+            HttpServletRequest request,
             @RequestParam(value = "userId", required = false) List<String> queryUserIds,
             @RequestParam(value = "parentFileId", required = false) String parentFileId,
             @RequestParam(value = "limit", required = false, defaultValue = "50") int limit,
             @RequestParam(value = "cursor", required = false) String cursor) {
-        UserFileListResult result = userFileService.listFiles(command(queryUserIds, parentFileId, limit, cursor));
+        UserFileListCommand command = command(queryUserIds, parentFileId, limit, cursor);
+        verifyUserAssertion(request, command);
+        UserFileListResult result = userFileService.listFiles(command);
         return ApiResponse.success(new UserFileListResponse(result), requestId());
     }
 
@@ -58,6 +65,13 @@ public class UserFileController {
                 normalizedParentFileId,
                 validatedLimit(limit),
                 normalizedCursor);
+    }
+
+    private void verifyUserAssertion(HttpServletRequest request, UserFileListCommand command) {
+        if (command.getUserId() == null) {
+            return;
+        }
+        userAssertionService.verify(request, requestContext(), command.getUserId());
     }
 
     private String queryUserId(List<String> queryUserIds) {

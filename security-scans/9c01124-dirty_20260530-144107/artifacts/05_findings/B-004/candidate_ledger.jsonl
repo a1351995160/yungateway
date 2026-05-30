@@ -1,0 +1,3 @@
+{"phase":"discovery","status":"reportable","summary":"OAuth callback caches WPS token under state user without verifying WPS subject."}
+{"phase":"validation","status":"valid","summary":"Token exchange response used here contains access token and expiry only; no WPS subject comparison before tokenCache.put(state.userId)."}
+{"phase":"attack_path","status":"complete","summary":"State for platform user is completed with a different WPS account code, poisoning future file operations."}

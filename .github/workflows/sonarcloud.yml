@@ -41,20 +41,29 @@ jobs:
           java-version: 17
           cache: maven
 
-      - name: Build, generate P3C PMD report, and scan
+      - name: Build and generate PMD report
         env:
           LOCAL_MYSQL_HOST: 127.0.0.1
           LOCAL_MYSQL_PORT: 3306
           LOCAL_MYSQL_USERNAME: root
           LOCAL_MYSQL_PASSWORD: ""
           LOCAL_MYSQL_TEST_DATABASE: yundoc_test
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
           chmod +x ./mvnw
-          ./mvnw -B verify pmd:pmd sonar:sonar \
+          ./mvnw -B verify pmd:pmd
+
+      - name: Generate Yundoc external security report
+        run: python scripts/sonar_external_issues.py
+
+      - name: SonarQube Cloud scan
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          ./mvnw -B sonar:sonar \
             -Dsonar.host.url=https://sonarcloud.io \
             -Dsonar.organization=${{ vars.SONAR_ORGANIZATION }} \
             -Dsonar.projectKey=a1351995160_yungateway \
             -Dsonar.projectName=yungateway \
             -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
-            -Dsonar.java.pmd.reportPaths=target/pmd.xml
+            -Dsonar.java.pmd.reportPaths=target/pmd.xml \
+            -Dsonar.externalIssuesReportPaths=target/yundoc-external-issues.json

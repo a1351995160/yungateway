@@ -16,14 +16,21 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 import java.io.IOException;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.util.Base64;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 class MvpSmokeTest {
+
+    private static final String USER_ASSERTION_SECRET = "test-user-assertion-secret-with-enough-length";
 
     @LocalServerPort
     private int port;
@@ -39,13 +46,13 @@ class MvpSmokeTest {
         AdminCookies adminCookies = adminCookies();
         JsonNode created = createBusinessSystem(adminCookies, "biz-mvp-smoke");
         configurePermissions(adminCookies, "biz-mvp-smoke");
-        String accessToken = accessToken(created);
+        AuthFixture auth = authFixture(created, "biz-mvp-smoke");
 
-        JsonNode preview = postAppPreview(accessToken);
-        JsonNode reauth = getUserFiles(accessToken, HttpStatus.UNAUTHORIZED);
+        JsonNode preview = postAppPreview(auth.accessToken);
+        JsonNode reauth = getUserFiles(auth, HttpStatus.UNAUTHORIZED);
         String state = stateFromAuthorizeUrl(reauth);
         callback(state);
-        JsonNode files = getUserFiles(accessToken, HttpStatus.OK);
+        JsonNode files = getUserFiles(auth, HttpStatus.OK);
 
         assertThat(preview.path("data").path("previewUrl").asText()).startsWith("https://preview.test/files/");
         assertThat(preview.path("data").path("expireAt").asText()).isNotBlank();
@@ -96,6 +103,11 @@ class MvpSmokeTest {
         return body(response).path("data").path("accessToken").asText();
     }
 
+    private AuthFixture authFixture(JsonNode created, String businessSystemId) throws IOException {
+        String clientId = created.path("data").path("businessSystem").path("clientId").asText();
+        return new AuthFixture(businessSystemId, clientId, accessToken(created));
+    }
+
     private JsonNode postAppPreview(String accessToken) throws IOException {
         ResponseEntity<String> response = restTemplate.postForEntity(
                 url("/api/v1/app/previews"),
@@ -105,11 +117,11 @@ class MvpSmokeTest {
         return body(response);
     }
 
-    private JsonNode getUserFiles(String accessToken, HttpStatus expectedStatus) throws IOException {
+    private JsonNode getUserFiles(AuthFixture auth, HttpStatus expectedStatus) throws IOException {
         ResponseEntity<String> response = restTemplate.exchange(
                 url("/api/v1/user/files?userId=smoke-user"),
                 HttpMethod.GET,
-                bearer(accessToken, null),
+                signed(auth),
                 String.class);
         assertThat(response.getStatusCode()).isEqualTo(expectedStatus);
         return body(response);
@@ -143,6 +155,38 @@ class MvpSmokeTest {
         HttpHeaders headers = jsonHeaders();
         headers.setBearerAuth(accessToken);
         return new HttpEntity<>(body, headers);
+    }
+
+    private HttpEntity<String> signed(AuthFixture auth) {
+        String timestamp = String.valueOf(Instant.now().getEpochSecond());
+        String nonce = "nonce-" + System.nanoTime();
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(auth.accessToken);
+        headers.add("X-Yundoc-User-Id", "smoke-user");
+        headers.add("X-Yundoc-User-Timestamp", timestamp);
+        headers.add("X-Yundoc-User-Nonce", nonce);
+        headers.add("X-Yundoc-User-Key-Id", "v1");
+        headers.add("X-Yundoc-User-Signature", signature(auth, timestamp, nonce));
+        return new HttpEntity<>(null, headers);
+    }
+
+    private String signature(AuthFixture auth, String timestamp, String nonce) {
+        String canonicalText = "GET\n"
+                + "/api/v1/user/files\n"
+                + "userId=smoke-user\n"
+                + auth.businessSystemId + "\n"
+                + auth.clientId + "\n"
+                + "smoke-user\n"
+                + timestamp + "\n"
+                + nonce;
+        try {
+            Mac mac = Mac.getInstance("HmacSHA256");
+            mac.init(new SecretKeySpec(USER_ASSERTION_SECRET.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
+            byte[] digest = mac.doFinal(canonicalText.getBytes(StandardCharsets.UTF_8));
+            return Base64.getUrlEncoder().withoutPadding().encodeToString(digest);
+        } catch (Exception ex) {
+            throw new AssertionError("signature should be generated", ex);
+        }
     }
 
     private HttpEntity<String> jsonEntity(String body) {
@@ -182,6 +226,18 @@ class MvpSmokeTest {
         private AdminCookies(String cookieHeader, String csrfToken) {
             this.cookieHeader = cookieHeader;
             this.csrfToken = csrfToken;
+        }
+    }
+
+    private static class AuthFixture {
+        private final String businessSystemId;
+        private final String clientId;
+        private final String accessToken;
+
+        private AuthFixture(String businessSystemId, String clientId, String accessToken) {
+            this.businessSystemId = businessSystemId;
+            this.clientId = clientId;
+            this.accessToken = accessToken;
         }
     }
 }

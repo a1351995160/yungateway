@@ -22,8 +22,13 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 import java.io.IOException;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.stream.Stream;
 
@@ -32,6 +37,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 class UserFileControllerTest {
+
+    private static final String USER_ASSERTION_SECRET = "test-user-assertion-secret-with-enough-length";
 
     @LocalServerPort
     private int port;
@@ -47,9 +54,9 @@ class UserFileControllerTest {
 
     @Test
     void returnsReauthWhenUserTokenMissing() throws IOException {
-        String token = userFileToken("biz-user-files-reauth");
+        AuthFixture auth = userFileAuth("biz-user-files-reauth");
 
-        ResponseEntity<String> response = getFiles(token, "?userId=user-001");
+        ResponseEntity<String> response = getFiles(auth, "?userId=user-001", "user-001");
 
         JsonNode error = objectMapper.readTree(response.getBody()).path("error");
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
@@ -63,9 +70,9 @@ class UserFileControllerTest {
             String businessSystemId,
             String query,
             String expectedCode) throws IOException {
-        String token = userFileToken(businessSystemId);
+        AuthFixture auth = userFileAuth(businessSystemId);
 
-        ResponseEntity<String> response = getFiles(token, query);
+        ResponseEntity<String> response = getFiles(auth.accessToken, query);
 
         JsonNode error = objectMapper.readTree(response.getBody()).path("error");
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
@@ -73,15 +80,53 @@ class UserFileControllerTest {
     }
 
     @Test
+    void rejectsMissingUserAssertionHeaders() throws IOException {
+        AuthFixture auth = userFileAuth("biz-user-files-missing-assertion");
+
+        ResponseEntity<String> response = getFiles(auth.accessToken, "?userId=user-001");
+
+        JsonNode error = objectMapper.readTree(response.getBody()).path("error");
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        assertThat(error.path("code").asText()).isEqualTo("USER_ASSERTION_INVALID");
+    }
+
+    @Test
+    void rejectsTamperedUserAssertion() throws IOException {
+        AuthFixture auth = userFileAuth("biz-user-files-tampered-assertion");
+
+        ResponseEntity<String> response = getFiles(auth, "?userId=user-002", "user-001");
+
+        JsonNode error = objectMapper.readTree(response.getBody()).path("error");
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        assertThat(error.path("code").asText()).isEqualTo("USER_ASSERTION_INVALID");
+    }
+
+    @Test
+    void rejectsReplayedUserAssertionNonce() throws IOException {
+        AuthFixture auth = userFileAuth("biz-user-files-replayed-assertion");
+        String nonce = "replay-nonce";
+
+        ResponseEntity<String> first = getFiles(auth, "?userId=user-004", "user-004", nonce);
+        ResponseEntity<String> second = getFiles(auth, "?userId=user-004", "user-004", nonce);
+
+        JsonNode error = objectMapper.readTree(second.getBody()).path("error");
+        assertThat(first.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        assertThat(objectMapper.readTree(first.getBody()).path("error").path("code").asText())
+                .isEqualTo("REAUTH_REQUIRED");
+        assertThat(second.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        assertThat(error.path("code").asText()).isEqualTo("USER_ASSERTION_INVALID");
+    }
+
+    @Test
     void callbackStoresTokenAndFileListSucceeds() throws IOException {
-        String token = userFileToken("biz-user-files-success");
-        ResponseEntity<String> first = getFiles(token, "?userId=user-003");
+        AuthFixture auth = userFileAuth("biz-user-files-success");
+        ResponseEntity<String> first = getFiles(auth, "?userId=user-003", "user-003");
         String state = stateFrom(first);
 
         ResponseEntity<String> callback = restTemplate.getForEntity(
                 url("/api/v1/wps/oauth/callback?code=ok-code&state=" + state),
                 String.class);
-        ResponseEntity<String> second = getFiles(token, "?userId=user-003&parentFileId=root&limit=20");
+        ResponseEntity<String> second = getFiles(auth, "?userId=user-003&parentFileId=root&limit=20", "user-003");
 
         JsonNode data = objectMapper.readTree(second.getBody()).path("data");
         assertThat(callback.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -95,6 +140,18 @@ class UserFileControllerTest {
                 url("/api/v1/user/files" + query),
                 HttpMethod.GET,
                 authorized(token),
+                String.class);
+    }
+
+    private ResponseEntity<String> getFiles(AuthFixture auth, String query, String userId) {
+        return getFiles(auth, query, userId, "nonce-" + System.nanoTime());
+    }
+
+    private ResponseEntity<String> getFiles(AuthFixture auth, String query, String userId, String nonce) {
+        return restTemplate.exchange(
+                url("/api/v1/user/files" + query),
+                HttpMethod.GET,
+                signed(auth, query, userId, nonce),
                 String.class);
     }
 
@@ -115,10 +172,13 @@ class UserFileControllerTest {
         return uri.getQuery().replaceFirst("^.*state=([^&]+).*$", "$1");
     }
 
-    private String userFileToken(String businessSystemId) {
+    private AuthFixture userFileAuth(String businessSystemId) {
         BusinessSystemCreateResponse created = createBusinessSystem(businessSystemId);
         adminService.savePermissions(businessSystemId, permissions());
-        return accessToken(created);
+        return new AuthFixture(
+                businessSystemId,
+                created.getBusinessSystem().getClientId(),
+                accessToken(created));
     }
 
     private String accessToken(BusinessSystemCreateResponse created) {
@@ -159,6 +219,44 @@ class UserFileControllerTest {
         return new HttpEntity<>(headers);
     }
 
+    private HttpEntity<String> signed(AuthFixture auth, String query, String userId, String nonce) {
+        String timestamp = String.valueOf(Instant.now().getEpochSecond());
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(auth.accessToken);
+        headers.add("X-Yundoc-User-Id", userId);
+        headers.add("X-Yundoc-User-Timestamp", timestamp);
+        headers.add("X-Yundoc-User-Nonce", nonce);
+        headers.add("X-Yundoc-User-Key-Id", "v1");
+        headers.add("X-Yundoc-User-Signature", signature(auth, query, userId, timestamp, nonce));
+        return new HttpEntity<>(headers);
+    }
+
+    private String signature(AuthFixture auth, String query, String userId, String timestamp, String nonce) {
+        String canonicalText = "GET\n"
+                + "/api/v1/user/files\n"
+                + queryString(query) + "\n"
+                + auth.businessSystemId + "\n"
+                + auth.clientId + "\n"
+                + userId + "\n"
+                + timestamp + "\n"
+                + nonce;
+        try {
+            Mac mac = Mac.getInstance("HmacSHA256");
+            mac.init(new SecretKeySpec(USER_ASSERTION_SECRET.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
+            byte[] digest = mac.doFinal(canonicalText.getBytes(StandardCharsets.UTF_8));
+            return Base64.getUrlEncoder().withoutPadding().encodeToString(digest);
+        } catch (Exception ex) {
+            throw new AssertionError("signature should be generated", ex);
+        }
+    }
+
+    private String queryString(String query) {
+        if (query.startsWith("?")) {
+            return query.substring(1);
+        }
+        return query;
+    }
+
     private HttpEntity<String> json(String body) {
         return new HttpEntity<>(body, jsonHeaders());
     }
@@ -171,5 +269,17 @@ class UserFileControllerTest {
 
     private String url(String path) {
         return "http://localhost:" + port + path;
+    }
+
+    private static class AuthFixture {
+        private final String businessSystemId;
+        private final String clientId;
+        private final String accessToken;
+
+        private AuthFixture(String businessSystemId, String clientId, String accessToken) {
+            this.businessSystemId = businessSystemId;
+            this.clientId = clientId;
+            this.accessToken = accessToken;
+        }
     }
 }

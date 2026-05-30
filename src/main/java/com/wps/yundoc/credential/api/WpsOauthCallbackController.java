@@ -11,11 +11,11 @@ import javax.validation.constraints.NotBlank;
 
 @RestController
 @RequestMapping("/api/v1/wps/oauth")
-public class WpsOAuthCallbackController {
+public class WpsOauthCallbackController {
 
     private final WpsUserAuthorizationService authorizationService;
 
-    public WpsOAuthCallbackController(WpsUserAuthorizationService authorizationService) {
+    public WpsOauthCallbackController(WpsUserAuthorizationService authorizationService) {
         this.authorizationService = authorizationService;
     }
 

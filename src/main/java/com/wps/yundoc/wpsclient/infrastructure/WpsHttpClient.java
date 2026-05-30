@@ -19,6 +19,8 @@ import org.springframework.web.client.RestTemplate;
 
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeParseException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Objects;
 
 public class WpsHttpClient implements WpsPreviewClient, WpsAppTokenClient {
@@ -42,7 +44,7 @@ public class WpsHttpClient implements WpsPreviewClient, WpsAppTokenClient {
     @Override
     public WpsPreviewLink createPreview(WpsPreviewRequest request) {
         WpsPreviewResponse response = executeWithRetry(() -> executePreviewOnce(request));
-        return toPreviewLink(response);
+        return toPreviewLink(response, request);
     }
 
     @Override
@@ -84,9 +86,11 @@ public class WpsHttpClient implements WpsPreviewClient, WpsAppTokenClient {
                 WpsAppTokenResponse.class).getBody();
     }
 
-    private WpsPreviewLink toPreviewLink(WpsPreviewResponse response) {
+    private WpsPreviewLink toPreviewLink(WpsPreviewResponse response, WpsPreviewRequest request) {
         PreviewData data = requirePreviewData(response);
         OffsetDateTime expireAt = parseExpireAt(data.getExpireAt());
+        validatePreviewUrl(data.getPreviewUrl());
+        validatePreviewExpireAt(expireAt, request.getExpireSeconds());
         return new WpsPreviewLink(data.getPreviewUrl(), expireAt);
     }
 
@@ -197,6 +201,36 @@ public class WpsHttpClient implements WpsPreviewClient, WpsAppTokenClient {
             return OffsetDateTime.parse(expireAt);
         } catch (DateTimeParseException ex) {
             throw upstreamError(ex);
+        }
+    }
+
+    private void validatePreviewUrl(String previewUrl) {
+        URI uri = previewUri(previewUrl);
+        if (!"https".equalsIgnoreCase(uri.getScheme())) {
+            throw upstreamError(null);
+        }
+        if (uri.getUserInfo() != null) {
+            throw upstreamError(null);
+        }
+        if (!properties.getPreviewAllowedHosts().contains(uri.getHost())) {
+            throw upstreamError(null);
+        }
+    }
+
+    private URI previewUri(String previewUrl) {
+        try {
+            return new URI(previewUrl);
+        } catch (URISyntaxException ex) {
+            throw upstreamError(ex);
+        }
+    }
+
+    private void validatePreviewExpireAt(OffsetDateTime expireAt, int requestedExpireSeconds) {
+        OffsetDateTime maxExpireAt = OffsetDateTime.now()
+                .plusSeconds(requestedExpireSeconds)
+                .plus(properties.getPreviewExpireSkew());
+        if (expireAt.isAfter(maxExpireAt)) {
+            throw upstreamError(null);
         }
     }
 

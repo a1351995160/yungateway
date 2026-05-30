@@ -3,6 +3,8 @@ package com.wps.yundoc.wpsclient.infrastructure;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 
 @ConfigurationProperties(prefix = "yundoc.wps-client")
 public class WpsClientProperties {
@@ -14,11 +16,13 @@ public class WpsClientProperties {
     private String authorizePath = "";
     private String userTokenPath = "";
     private String redirectUri = "";
-    private String oAuthScope = "";
+    private String oauthScope = "";
     private String appId = "";
     private String appSecret = "";
     private Duration connectTimeout = Duration.ofSeconds(2);
     private Duration readTimeout = Duration.ofSeconds(5);
+    private Duration previewExpireSkew = Duration.ofMinutes(1);
+    private List<String> previewAllowedHosts = new ArrayList<>();
     private int maxRetries = 1;
 
     public String getBaseUrl() {
@@ -77,12 +81,12 @@ public class WpsClientProperties {
         this.redirectUri = redirectUri;
     }
 
-    public String getOAuthScope() {
-        return oAuthScope;
+    public String getOauthScope() {
+        return oauthScope;
     }
 
-    public void setOAuthScope(String oAuthScope) {
-        this.oAuthScope = oAuthScope;
+    public void setOauthScope(String oauthScope) {
+        this.oauthScope = oauthScope;
     }
 
     public String getAppId() {
@@ -115,6 +119,22 @@ public class WpsClientProperties {
 
     public void setReadTimeout(Duration readTimeout) {
         this.readTimeout = readTimeout;
+    }
+
+    public Duration getPreviewExpireSkew() {
+        return previewExpireSkew;
+    }
+
+    public void setPreviewExpireSkew(Duration previewExpireSkew) {
+        this.previewExpireSkew = previewExpireSkew;
+    }
+
+    public List<String> getPreviewAllowedHosts() {
+        return previewAllowedHosts;
+    }
+
+    public void setPreviewAllowedHosts(List<String> previewAllowedHosts) {
+        this.previewAllowedHosts = previewAllowedHosts;
     }
 
     public int getMaxRetries() {

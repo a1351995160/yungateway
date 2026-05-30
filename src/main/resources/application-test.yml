@@ -36,6 +36,11 @@ yundoc:
     audience: yundoc-business-systems-test
     secret: test-business-jwt-secret-with-enough-length
     ttl: 30m
+  user-assertion:
+    secret: test-user-assertion-secret-with-enough-length
+    key-id: v1
+    timestamp-tolerance: 5m
+    max-nonce-count: 10000
   wps-client:
     base-url: https://wps.test
     preview-path: /api/preview-links
@@ -47,6 +52,9 @@ yundoc:
     oauth-scope: files.read
     app-id: test-wps-app-id
     app-secret: ${WPS_TEST_APP_SECRET:local-wps-placeholder}
+    preview-allowed-hosts:
+      - preview.test
+    preview-expire-skew: 1m
     connect-timeout: 1s
     read-timeout: 1s
     max-retries: 1
