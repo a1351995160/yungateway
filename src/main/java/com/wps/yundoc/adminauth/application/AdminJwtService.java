@@ -113,7 +113,7 @@ public class AdminJwtService {
     private AdminRole parseRole(String role) {
         try {
             return AdminRole.valueOf(role);
-        } catch (RuntimeException ex) {
+        } catch (IllegalArgumentException ex) {
             throw new YundocException(YundocErrorCode.TOKEN_INVALID);
         }
     }

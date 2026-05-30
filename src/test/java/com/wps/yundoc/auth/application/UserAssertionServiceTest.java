@@ -39,12 +39,11 @@ class UserAssertionServiceTest {
         UserAssertionService service = service(properties());
         String timestamp = currentTimestamp();
         MockHttpServletRequest invalid = request("/api/v1/user/files", "userId=user-001");
-        addAssertionHeaders(
+        addAssertionHeadersWithSignature(
                 invalid,
                 "user-001",
                 timestamp,
                 "nonce-001",
-                "/api/v1/user/files",
                 "invalid-signature");
 
         assertInvalidAssertion(() -> service.verify(invalid, context(), "user-001"));
@@ -111,12 +110,11 @@ class UserAssertionServiceTest {
                 signature(path, request.getQueryString(), userId, timestamp, nonce));
     }
 
-    private void addAssertionHeaders(
+    private void addAssertionHeadersWithSignature(
             MockHttpServletRequest request,
             String userId,
             String timestamp,
             String nonce,
-            String path,
             String signature) {
         request.addHeader(UserAssertionService.USER_ID_HEADER, userId);
         request.addHeader(UserAssertionService.TIMESTAMP_HEADER, timestamp);

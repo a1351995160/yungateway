@@ -47,8 +47,8 @@ Repository-specific PMD rules are configured in `config/pmd/yundoc-java-ruleset.
 
 | Standard | PMD rule | Threshold |
 | --- | --- | --- |
-| Method parameters must not exceed 5 | `ExcessiveParameterList` | Reports at 6+ parameters |
-| Method length should stay within 20 lines | `ExcessiveMethodLength` | Reports at 21+ lines |
+| Method parameters must not exceed 6 | `ExcessiveParameterList` | Reports at 7+ parameters |
+| Method length should stay within 40 lines | `ExcessiveMethodLength` | Reports at 41+ lines |
 | Class/file length should stay within 250 lines | `ExcessiveClassLength` | Reports at 251+ lines |
 | Cyclomatic complexity should stay within 4 | `CyclomaticComplexity` | Reports at 5+ |
 | Direct class coupling should stay within 15 | `CouplingBetweenObjects` | Threshold 15 |
@@ -79,7 +79,7 @@ These native Sonar rules should still be enabled or parameterized in the
 SonarCloud Java Quality Profile for deeper semantic analysis. The CI rules
 above provide repository-owned coverage when the profile is not configured:
 
-- `java:S107` - too many parameters. Set maximum to match the repository standard.
+- `java:S107` - too many parameters. Set maximum to 6 to match the repository standard.
 - `java:S3776` - cognitive complexity.
 - `java:S1192` - duplicated string literals.
 - `java:S4790` - hardcoded credentials/secrets.

@@ -6,9 +6,12 @@ import org.apache.ibatis.annotations.Param;
 @Mapper
 public interface BizSystemMapper {
 
+    String PARAM_BUSINESS_SYSTEM_ID = "businessSystemId";
+    String PARAM_UPDATED_AT = "updatedAt";
+
     int insert(BizSystemPO bizSystem);
 
-    BizSystemPO selectByBusinessSystemId(@Param("businessSystemId") String businessSystemId);
+    BizSystemPO selectByBusinessSystemId(@Param(PARAM_BUSINESS_SYSTEM_ID) String businessSystemId);
 
     BizSystemPO selectByClientId(@Param("clientId") String clientId);
 
@@ -19,21 +22,21 @@ public interface BizSystemMapper {
             @Param("offset") int offset);
 
     int updateProfile(
-            @Param("businessSystemId") String businessSystemId,
+            @Param(PARAM_BUSINESS_SYSTEM_ID) String businessSystemId,
             @Param("businessSystemName") String businessSystemName,
             @Param("status") String status,
             @Param("jwtTtlSeconds") Integer jwtTtlSeconds,
             @Param("description") String description,
-            @Param("updatedAt") java.time.LocalDateTime updatedAt);
+            @Param(PARAM_UPDATED_AT) java.time.LocalDateTime updatedAt);
 
     int updateSecret(
-            @Param("businessSystemId") String businessSystemId,
+            @Param(PARAM_BUSINESS_SYSTEM_ID) String businessSystemId,
             @Param("clientSecretDigest") String clientSecretDigest,
             @Param("clientSecretSalt") String clientSecretSalt,
             @Param("clientSecretAlg") String clientSecretAlg,
-            @Param("updatedAt") java.time.LocalDateTime updatedAt);
+            @Param(PARAM_UPDATED_AT) java.time.LocalDateTime updatedAt);
 
     int increasePermissionVersion(
-            @Param("businessSystemId") String businessSystemId,
-            @Param("updatedAt") java.time.LocalDateTime updatedAt);
+            @Param(PARAM_BUSINESS_SYSTEM_ID) String businessSystemId,
+            @Param(PARAM_UPDATED_AT) java.time.LocalDateTime updatedAt);
 }

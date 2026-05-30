@@ -25,6 +25,8 @@ import java.util.Objects;
 
 public class WpsHttpClient implements WpsPreviewClient, WpsAppTokenClient {
 
+    private static final String HTTPS_SCHEME = "https";
+
     private final WpsClientProperties properties;
     private final RestTemplate restTemplate;
 
@@ -206,7 +208,7 @@ public class WpsHttpClient implements WpsPreviewClient, WpsAppTokenClient {
 
     private void validatePreviewUrl(String previewUrl) {
         URI uri = previewUri(previewUrl);
-        if (!"https".equalsIgnoreCase(uri.getScheme())) {
+        if (!HTTPS_SCHEME.equalsIgnoreCase(uri.getScheme())) {
             throw upstreamError(null);
         }
         if (uri.getUserInfo() != null) {

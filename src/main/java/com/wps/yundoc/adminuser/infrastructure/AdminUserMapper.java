@@ -9,9 +9,11 @@ import java.util.List;
 @Mapper
 public interface AdminUserMapper {
 
+    String PARAM_USERNAME = "username";
+
     int insert(AdminUserPO adminUser);
 
-    AdminUserPO selectByUsername(@Param("username") String username);
+    AdminUserPO selectByUsername(@Param(PARAM_USERNAME) String username);
 
     List<AdminUserPO> selectPage(
             @Param("keyword") String keyword,
@@ -21,13 +23,13 @@ public interface AdminUserMapper {
             @Param("offset") int offset);
 
     int updateProfile(
-            @Param("username") String username,
+            @Param(PARAM_USERNAME) String username,
             @Param("displayName") String displayName,
             @Param("role") String role,
             @Param("status") String status,
             @Param("updatedAt") LocalDateTime updatedAt);
 
     int updateLastLoginAt(
-            @Param("username") String username,
+            @Param(PARAM_USERNAME) String username,
             @Param("lastLoginAt") LocalDateTime lastLoginAt);
 }

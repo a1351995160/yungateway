@@ -12,8 +12,10 @@ import org.springframework.context.annotation.Profile;
 @Configuration
 public class WpsClientConfiguration {
 
+    private static final String REAL_WPS_PROFILE = "!local & !test";
+
     @Bean
-    @Profile("!local & !test")
+    @Profile(REAL_WPS_PROFILE)
     public WpsHttpClient wpsHttpClient(
             WpsClientProperties properties,
             RestTemplateBuilder restTemplateBuilder) {
@@ -21,19 +23,19 @@ public class WpsClientConfiguration {
     }
 
     @Bean
-    @Profile("!local & !test")
+    @Profile(REAL_WPS_PROFILE)
     public WpsPreviewClient wpsPreviewClient(WpsHttpClient wpsHttpClient) {
         return wpsHttpClient;
     }
 
     @Bean
-    @Profile("!local & !test")
+    @Profile(REAL_WPS_PROFILE)
     public WpsAppTokenClient wpsAppTokenClient(WpsHttpClient wpsHttpClient) {
         return wpsHttpClient;
     }
 
     @Bean
-    @Profile("!local & !test")
+    @Profile(REAL_WPS_PROFILE)
     public WpsFileClient wpsFileClient(
             WpsClientProperties properties,
             RestTemplateBuilder restTemplateBuilder) {
@@ -41,7 +43,7 @@ public class WpsClientConfiguration {
     }
 
     @Bean
-    @Profile("!local & !test")
+    @Profile(REAL_WPS_PROFILE)
     public WpsAuthorizationClient wpsAuthorizationClient(
             WpsClientProperties properties,
             RestTemplateBuilder restTemplateBuilder) {
