@@ -1,0 +1,3 @@
+{"phase":"discovery","status":"reportable","summary":"Preview URL and expiry are trusted from WPS and returned directly."}
+{"phase":"validation","status":"valid","summary":"Code only checks previewUrl nonblank and expireAt parseable; no HTTPS/host/userinfo/expiry-window validation found."}
+{"phase":"attack_path","status":"complete","summary":"WPS or a misconfigured WPS endpoint returns unsafe or long-lived URL; gateway relays it and cannot revoke direct URL after issuance."}

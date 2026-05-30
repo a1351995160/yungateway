@@ -48,7 +48,7 @@ src/
 - Spring `@Transactional` 只放在 application service 或专用事务服务上，不放在 Controller、Mapper 或 Domain 对象上。
 - 包含 WPS HTTP 调用的流程不得用一个数据库事务包住全链路，必须拆成本地状态准备、外部调用、本地状态收尾。
 - 请求上下文通过 Filter/Interceptor 构建为 `RequestContext`，业务代码不得散落读取 HTTP header。
-- USER 模式能力 API 必须在进入 application service 前校验 `X-Operator-Id`。
+- USER 模式能力 API 必须在进入 application service 前校验 USER 断言签名。签名至少绑定 method、path、queryString、`businessSystemId`、`clientId`、`userId`、timestamp 和 nonce。
 - 由于 Spring Boot 2.7.x 仍处于 `javax.*` 时代，不引入只支持 `jakarta.*` 的 Spring Boot 3+ 依赖版本。
 
 ## 依赖与代码生成规范
@@ -123,6 +123,12 @@ src/
 
 - 第一版能力 API 的主鉴权方式是内部 JWT；API Key 只用于业务系统换取 JWT 或运维兜底，不能直接访问云文档能力。
 - 授权检查必须基于业务系统、WPS/company 标识、WPS 授权模式、USER 模式下的操作人、WPS 凭证主体、drive/file 范围和操作类型。
+- `clientSecret` 只用于换取内部 JWT；能力请求签名必须使用独立签名密钥。
+- 当前产品决策允许请求签名密钥全业务系统共用，不要求每个业务系统单独一把签名 key。
+- USER 能力的 WPS token 按 `userId` 全业务系统复用；业务系统负责保证 `userId` 与 WPS 账号绑定关系真实有效。
+- APP 预览能力必须增加请求签名，签名至少绑定 method、path、queryString、`businessSystemId`、`clientId`、`source.type`、`source.fileId`、`options.expireSeconds`、timestamp 和 nonce。
+- 能力网关负责验证请求未被篡改、未被重放和业务系统拥有对应权限码；默认不判断业务系统是否能代表某个最终用户，也不判断某个 `fileId` 是否归属于某个业务系统。
+- WPS 预览链接返回前必须校验 `previewUrl` 为 HTTPS、host 在允许列表中、无 userinfo，且 `expireAt` 不明显超过请求的 `expireSeconds`。如需网关强制有效期，必须返回网关短链或代理链接，而不是直接返回 WPS 直链。
 - 所有入参使用 Bean Validation 或显式 schema 校验。
 - 查询参数使用白名单映射，禁止把 `Map<String, String>` 原样转发给 WPS。
 - 日志必须脱敏以下字段：`APPKEY`、`access_token`、`refresh_token`、`app_ticket`、`Authorization`、`X-Kso-Authorization`。
@@ -165,6 +171,20 @@ WPS client 是核心深模块，必须封装：
 ## 静态审查规则
 
 以下规则作为代码审查、Sonar 规则配置、CI 门禁和人工 review 的共同基线。Java 规则适用于后端微服务；TS/JS 规则适用于管理台、脚本、前端或 Node 工具代码。
+
+后端自动化落地方式：
+
+- SonarCloud 原生规则由 SonarCloud 后台的 Java Quality Profile 管理，仓库内不能直接修改后台阈值。
+- 阿里 P3C 规则通过 Maven PMD 插件生成 `target/pmd.xml`，再由 `sonar.java.pmd.reportPaths` 导入 SonarCloud。
+- 本仓库补充的 Java 规则放在 `config/pmd/yundoc-java-ruleset.xml`，同样通过 `target/pmd.xml` 导入 SonarCloud。
+- 仓库自管安全规则放在 `scripts/sonar_external_issues.py`，生成 `target/yundoc-external-issues.json`，再由 `sonar.externalIssuesReportPaths` 导入 SonarCloud。
+- 暂不适合自动化或无法用 PMD/Sonar 精确表达的条目，仍作为人工 review 和架构测试约束。
+- 规则覆盖明细见 `docs/quality/sonarcloud-rule-coverage.md`。
+
+前端自动化落地方式：
+
+- 管理台仓库的 SonarCloud 扫描导入 `eslint-report.json`。
+- 适合前端的规则放在管理台仓库 `.eslintrc.sonar.cjs`，只用于 CI/Sonar 报告，不影响日常 `npm run lint` 的基础规则。
 
 ### Bug
 

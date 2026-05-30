@@ -36,6 +36,18 @@ Smoke 流程覆盖：
 7. OAuth callback 写入本地 USER token
 8. USER 文件列表再次调用成功
 
+## 能力接入安全边界
+
+能力接口的安全边界见 [WPS 云文档能力接入与请求签名设计](docs/latest/2026-05-30-latest-wps-yundoc-capability-signature-design.zh.md)。
+
+当前约定：
+
+- `clientSecret` 只用于换取内部 JWT；能力请求签名使用独立签名密钥。
+- 请求签名密钥按当前产品决策全业务系统共用，不为每个业务系统单独创建。
+- 业务系统负责确认 `userId`、WPS 账号绑定关系和 `fileId` 归属；能力网关负责验证请求未被篡改、未被重放、业务系统有权限，并安全调用 WPS。
+- WPS USER token 按 `userId` 全业务系统复用。
+- 预览直链如需由网关强制过期，需要后续实现网关短链或代理；仅直接返回 WPS URL 时，网关只能校验 WPS 返回的 URL 与 `expireAt`。
+
 ## 部署约束
 
 - MVP 只支持单实例或粘性会话；OAuth state、APP token、USER token 当前使用本地内存缓存。

@@ -11,6 +11,7 @@ import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestTemplate;
 
 import java.time.Duration;
+import java.time.OffsetDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -27,14 +28,14 @@ class WpsPreviewClientTest {
         RestTemplate restTemplate = new RestTemplate();
         MockRestServiceServer server = MockRestServiceServer.bindTo(restTemplate).build();
         WpsHttpClient client = new WpsHttpClient(properties(), new RestTemplateBuilder(), restTemplate);
-        String body = "{\"code\":0,\"data\":{\"previewUrl\":\"https://preview\",\"expireAt\":\"2026-05-26T18:00:00+08:00\"}}";
+        String body = previewResponse("https://preview.test/files/wps-file-001", 3600);
         server.expect(once(), requestTo("https://wps.test/api/preview-links"))
                 .andExpect(header("Authorization", "Bearer app-token"))
                 .andRespond(withSuccess(body, MediaType.APPLICATION_JSON));
 
         WpsPreviewLink link = client.createPreview(request());
 
-        assertThat(link.getPreviewUrl()).isEqualTo("https://preview");
+        assertThat(link.getPreviewUrl()).isEqualTo("https://preview.test/files/wps-file-001");
         server.verify();
     }
 
@@ -58,7 +59,8 @@ class WpsPreviewClientTest {
         MockRestServiceServer server = MockRestServiceServer.bindTo(restTemplate).build();
         WpsHttpClient client = new WpsHttpClient(noRetryProperties(), new RestTemplateBuilder(), restTemplate);
         WpsPreviewRequest previewRequest = request();
-        String body = "{\"code\":0,\"data\":{\"previewUrl\":\"https://preview\",\"expireAt\":\"bad-date\"}}";
+        String body = "{\"code\":0,\"data\":{\"previewUrl\":\"https://preview.test/files/wps-file-001\","
+                + "\"expireAt\":\"bad-date\"}}";
         server.expect(once(), requestTo("https://wps.test/api/preview-links"))
                 .andRespond(withSuccess(body, MediaType.APPLICATION_JSON));
 
@@ -72,7 +74,7 @@ class WpsPreviewClientTest {
         RestTemplate restTemplate = new RestTemplate();
         MockRestServiceServer server = MockRestServiceServer.bindTo(restTemplate).build();
         WpsHttpClient client = new WpsHttpClient(properties(), new RestTemplateBuilder(), restTemplate);
-        String body = "{\"code\":0,\"data\":{\"previewUrl\":\"https://preview\",\"expireAt\":\"2026-05-26T18:00:00+08:00\"}}";
+        String body = previewResponse("https://preview.test/files/wps-file-001", 3600);
         server.expect(once(), requestTo("https://wps.test/api/preview-links"))
                 .andRespond(withServerError());
         server.expect(once(), requestTo("https://wps.test/api/preview-links"))
@@ -80,7 +82,7 @@ class WpsPreviewClientTest {
 
         WpsPreviewLink link = client.createPreview(request());
 
-        assertThat(link.getPreviewUrl()).isEqualTo("https://preview");
+        assertThat(link.getPreviewUrl()).isEqualTo("https://preview.test/files/wps-file-001");
         server.verify();
     }
 
@@ -96,6 +98,28 @@ class WpsPreviewClientTest {
         assertThat(client.issueAppToken().getAccessToken()).isEqualTo("app-token");
     }
 
+    @Test
+    void rejectsPreviewUrlWithUnsafeSchemeUserInfoOrHost() {
+        assertInvalidPreviewUrl("http://preview.test/files/wps-file-001");
+        assertInvalidPreviewUrl("https://user:pass@preview.test/files/wps-file-001");
+        assertInvalidPreviewUrl("https://evil.test/files/wps-file-001");
+    }
+
+    @Test
+    void rejectsPreviewUrlThatExpiresTooLate() {
+        RestTemplate restTemplate = new RestTemplate();
+        MockRestServiceServer server = MockRestServiceServer.bindTo(restTemplate).build();
+        WpsHttpClient client = new WpsHttpClient(noRetryProperties(), new RestTemplateBuilder(), restTemplate);
+        WpsPreviewRequest previewRequest = request();
+        String body = previewResponse("https://preview.test/files/wps-file-001", 7200);
+        server.expect(once(), requestTo("https://wps.test/api/preview-links"))
+                .andRespond(withSuccess(body, MediaType.APPLICATION_JSON));
+
+        assertThatThrownBy(() -> client.createPreview(previewRequest))
+                .isInstanceOf(YundocException.class)
+                .hasFieldOrPropertyWithValue("errorCode", YundocErrorCode.WPS_UPSTREAM_ERROR);
+    }
+
     private WpsPreviewRequest request() {
         return new WpsPreviewRequest("wps-file-001", 3600, "app-token");
     }
@@ -105,6 +129,7 @@ class WpsPreviewClientTest {
         properties.setBaseUrl("https://wps.test");
         properties.setPreviewPath("/api/preview-links");
         properties.setTokenPath("/oauth/token");
+        properties.getPreviewAllowedHosts().add("preview.test");
         properties.setConnectTimeout(Duration.ofSeconds(1));
         properties.setReadTimeout(Duration.ofSeconds(1));
         properties.setMaxRetries(1);
@@ -115,5 +140,24 @@ class WpsPreviewClientTest {
         WpsClientProperties properties = properties();
         properties.setMaxRetries(0);
         return properties;
+    }
+
+    private void assertInvalidPreviewUrl(String previewUrl) {
+        RestTemplate restTemplate = new RestTemplate();
+        MockRestServiceServer server = MockRestServiceServer.bindTo(restTemplate).build();
+        WpsHttpClient client = new WpsHttpClient(noRetryProperties(), new RestTemplateBuilder(), restTemplate);
+        WpsPreviewRequest previewRequest = request();
+        server.expect(once(), requestTo("https://wps.test/api/preview-links"))
+                .andRespond(withSuccess(previewResponse(previewUrl, 3600), MediaType.APPLICATION_JSON));
+
+        assertThatThrownBy(() -> client.createPreview(previewRequest))
+                .isInstanceOf(YundocException.class)
+                .hasFieldOrPropertyWithValue("errorCode", YundocErrorCode.WPS_UPSTREAM_ERROR);
+    }
+
+    private String previewResponse(String previewUrl, int expireSeconds) {
+        String expireAt = OffsetDateTime.now().plusSeconds(expireSeconds).toString();
+        return "{\"code\":0,\"data\":{\"previewUrl\":\"" + previewUrl
+                + "\",\"expireAt\":\"" + expireAt + "\"}}";
     }
 }

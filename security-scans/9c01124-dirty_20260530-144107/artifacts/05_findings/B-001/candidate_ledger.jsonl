@@ -1,0 +1,3 @@
+{"phase":"discovery","status":"reportable","summary":"Global USER assertion secret plus no caller-to-user authorization boundary."}
+{"phase":"validation","status":"valid","summary":"Signature binds business/client/user but does not prove the business system may act as that user; WPS token cache is userId-only by design."}
+{"phase":"attack_path","status":"complete","summary":"Caller with JWT, user-files:list, and shared assertion key signs arbitrary cached userId and reaches UserFileService."}

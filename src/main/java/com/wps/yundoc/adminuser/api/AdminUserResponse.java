@@ -1,5 +1,6 @@
 package com.wps.yundoc.adminuser.api;
 
+import com.wps.yundoc.adminauth.application.AdminPrincipal;
 import com.wps.yundoc.adminauth.application.AdminRole;
 import com.wps.yundoc.adminauth.application.AdminStatus;
 
@@ -7,32 +8,40 @@ import java.time.LocalDateTime;
 
 public class AdminUserResponse {
 
-    private final String username;
-    private final String displayName;
-    private final AdminRole role;
-    private final AdminStatus status;
-    private final boolean superAdmin;
-    private final LocalDateTime lastLoginAt;
-    private final LocalDateTime createdAt;
-    private final LocalDateTime updatedAt;
+    private String username;
+    private String displayName;
+    private AdminRole role;
+    private AdminStatus status;
+    private boolean superAdmin;
+    private LocalDateTime lastLoginAt;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 
-    public AdminUserResponse(
-            String username,
-            String displayName,
-            AdminRole role,
-            AdminStatus status,
-            boolean superAdmin,
-            LocalDateTime lastLoginAt,
-            LocalDateTime createdAt,
-            LocalDateTime updatedAt) {
-        this.username = username;
-        this.displayName = displayName;
-        this.role = role;
-        this.status = status;
-        this.superAdmin = superAdmin;
-        this.lastLoginAt = lastLoginAt;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
+    public static AdminUserResponse fromPrincipal(AdminPrincipal principal) {
+        AdminUserResponse response = new AdminUserResponse();
+        response.username = principal.getUsername();
+        response.displayName = principal.getDisplayName();
+        response.role = principal.getRole();
+        response.status = principal.getStatus();
+        response.superAdmin = principal.isSuperAdmin();
+        response.lastLoginAt = principal.getLastLoginAt();
+        return response;
+    }
+
+    public static AdminUserResponse databaseAdmin(AdminUserView user) {
+        AdminUserResponse response = new AdminUserResponse();
+        response.username = user.getUsername();
+        response.displayName = user.getDisplayName();
+        response.role = user.getRole();
+        response.status = user.getStatus();
+        response.superAdmin = false;
+        response.lastLoginAt = user.getLastLoginAt();
+        response.createdAt = user.getCreatedAt();
+        response.updatedAt = user.getUpdatedAt();
+        return response;
+    }
+
+    private AdminUserResponse() {
     }
 
     public String getUsername() {
@@ -65,5 +74,22 @@ public class AdminUserResponse {
 
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
+    }
+
+    public interface AdminUserView {
+
+        String getUsername();
+
+        String getDisplayName();
+
+        AdminRole getRole();
+
+        AdminStatus getStatus();
+
+        LocalDateTime getLastLoginAt();
+
+        LocalDateTime getCreatedAt();
+
+        LocalDateTime getUpdatedAt();
     }
 }

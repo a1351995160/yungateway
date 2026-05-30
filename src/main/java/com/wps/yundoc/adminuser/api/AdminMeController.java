@@ -18,15 +18,7 @@ public class AdminMeController {
     @GetMapping
     public ApiResponse<AdminUserResponse> me(HttpServletRequest request) {
         AdminPrincipal principal = principal(request);
-        AdminUserResponse response = new AdminUserResponse(
-                principal.getUsername(),
-                principal.getDisplayName(),
-                principal.getRole(),
-                principal.getStatus(),
-                principal.isSuperAdmin(),
-                principal.getLastLoginAt(),
-                null,
-                null);
+        AdminUserResponse response = AdminUserResponse.fromPrincipal(principal);
         return ApiResponse.success(response, REQUEST_ID_UNKNOWN);
     }
 

@@ -46,6 +46,45 @@
 7. 访问 `GET /api/v1/wps/oauth/callback?code=mock-code&state={state}`
 8. 再次调用 `GET /api/v1/user/files?userId={userId}` 获取文件列表，响应字段为 `data.items` 与 `data.nextCursor`
 
+## 能力请求签名约定
+
+能力请求签名的完整设计见 [WPS 云文档能力接入与请求签名设计](../latest/2026-05-30-latest-wps-yundoc-capability-signature-design.zh.md)。
+
+当前本地流程需要理解以下边界：
+
+- `clientSecret` 用于 `POST /api/v1/auth/token` 换取内部 JWT。
+- USER 文件列表使用 USER 断言签名，签名密钥来自 `yundoc.user-assertion.secret`。
+- APP 预览后续也会增加请求签名，用于防止 `fileId`、`expireSeconds`、方法和路径被篡改或重放。
+- 业务系统负责确认 `userId` 和 WPS 账号绑定关系，以及 `fileId` 是否允许预览；网关只验证请求完整性、防重放、权限码和 WPS 返回内容安全。
+
+USER 文件列表签名内容：
+
+```text
+method
+path
+queryString
+businessSystemId
+clientId
+userId
+timestamp
+nonce
+```
+
+APP 预览目标签名内容：
+
+```text
+method
+path
+queryString
+businessSystemId
+clientId
+source.type
+source.fileId
+options.expireSeconds
+timestamp
+nonce
+```
+
 ## 关键配置
 
 - `yundoc.admin-auth.username`
@@ -57,6 +96,8 @@
 - `yundoc.jwt.issuer`
 - `yundoc.jwt.audience`
 - `yundoc.jwt.secret`
+- `yundoc.user-assertion.secret`
+- `yundoc.user-assertion.key-id`
 - WPS app 配置与 OAuth callback 地址，接入 real WPS client 时必须提供
 
 ## 故障排查

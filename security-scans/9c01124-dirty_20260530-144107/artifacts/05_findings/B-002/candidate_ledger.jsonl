@@ -1,0 +1,3 @@
+{"phase":"discovery","status":"reportable","summary":"APP preview accepts caller-supplied fileId and uses global WPS app credential."}
+{"phase":"validation","status":"valid","summary":"Code validates source type and length, but no object ownership or file grant was found before WPS preview creation."}
+{"phase":"attack_path","status":"complete","summary":"Caller with app-preview:create submits known fileId; gateway returns WPS preview link if WPS app credential can create it."}
